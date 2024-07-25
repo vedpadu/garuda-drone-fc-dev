@@ -1,0 +1,5 @@
+../Core/Src/elrsToRcData.c:24:6:unpackChannelDataHybridWide	2
+../Core/Src/elrsToRcData.c:49:6:unpackAnalogChannelData	3
+../Core/Src/elrsToRcData.c:73:10:convertSwitch1b	2
+../Core/Src/elrsToRcData.c:78:10:convertSwitchNb	2
+../Core/Src/elrsToRcData.c:83:6:hybridWideNonceToSwitchIndex	1

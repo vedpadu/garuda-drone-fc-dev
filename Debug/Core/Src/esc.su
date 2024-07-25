@@ -1,0 +1,3 @@
+../Core/Src/esc.c:24:6:updateESC	16	static
+../Core/Src/esc.c:99:6:setMotorOutputs	24	static
+../Core/Src/esc.c:110:6:dshot600	40	static
