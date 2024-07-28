@@ -12,6 +12,8 @@
 #include "stm32f4xx_hal.h"
 #include "main.h"
 #include "string.h"
+#include "tim.h"
+
 
 #define MOTOR_BIT_0           7
 #define MOTOR_BIT_1           14
@@ -29,10 +31,13 @@ typedef struct motorPWMTim_s {
 	uint8_t motorIndex;
 	TIM_HandleTypeDef* tim;
 	uint32_t channel;
+	DMA_HandleTypeDef* dma;
 } motorPWMTim_t;
 
 void updateESC();
 void dshot600(uint32_t *motor, uint16_t value);
 void setMotorOutputs(uint16_t* desiredOut);
+
+motorPWMTim_t* getTims();
 
 #endif /* INC_ESC_H_ */

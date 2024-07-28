@@ -5,6 +5,7 @@
 extern const uint8_t bmi270_config_file[8193];
 uint8_t spiWorking = 0;
 uint8_t initWorking = 0;
+int countGyros = 0;
 
 // buffer to use for internal read spi calls. save memory
 uint8_t bmi270_init_spi_buf[2] = {0x00, 0x00};
@@ -35,6 +36,7 @@ void BMI270ReadData(float* accelBuf, float* gyroBuf)
 	gyroBuf[0] = lsb_to_dps(gyroXSigned, (float)2000.0, 16);
 	gyroBuf[1] = lsb_to_dps((int16_t)gyroYBin, (float)2000.0, 16);
 	gyroBuf[2] = lsb_to_dps(gyroZSigned, (float)2000.0, 16);
+	countGyros+=1;
 }
 
 int16_t getCAS(){

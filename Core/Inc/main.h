@@ -39,6 +39,7 @@ extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim4;
 extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi3;
+extern uint8_t doBlink;
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -76,6 +77,9 @@ void Error_Handler(void);
 #define BIND_Pin GPIO_PIN_2
 #define BIND_GPIO_Port GPIOB
 #define BIND_EXTI_IRQn EXTI2_IRQn
+#define USB_VBUS_Pin GPIO_PIN_9
+#define USB_VBUS_GPIO_Port GPIOA
+#define USB_VBUS_EXTI_IRQn EXTI9_5_IRQn
 #define RX_SPI_BUSY_Pin GPIO_PIN_13
 #define RX_SPI_BUSY_GPIO_Port GPIOA
 #define SPI3_CS_Pin GPIO_PIN_15

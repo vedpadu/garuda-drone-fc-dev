@@ -46,6 +46,11 @@ extern TIM_HandleTypeDef htim10;
 
 /* USER CODE BEGIN Private defines */
 
+extern DMA_HandleTypeDef hdma_tim2_ch1;
+extern DMA_HandleTypeDef hdma_tim2_ch3_up;
+extern DMA_HandleTypeDef hdma_tim4_ch2;
+extern DMA_HandleTypeDef hdma_tim4_ch3;
+
 /* USER CODE END Private defines */
 
 void MX_TIM2_Init(void);

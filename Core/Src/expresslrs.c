@@ -57,9 +57,8 @@ void setPrescaleForRateIndex(uint8_t index){
 	__HAL_TIM_SET_AUTORELOAD(&htim10, airRateConfig[index].interval - 1);
 }
 
-void setLastClockTime(uint32_t timeMicros, int* counter){
+void setLastClockTime(uint32_t timeMicros){
 	phaseLocker.lastClockTimeMicros = timeMicros;
-	*counter = *counter + 1;
 	phaseLocker.lastUpdateClock = 1;
 }
 

@@ -5,7 +5,7 @@
 ../Core/Src/tim.c:239:6:MX_TIM9_Init	24	static
 ../Core/Src/tim.c:275:6:MX_TIM10_Init	8	static
 ../Core/Src/tim.c:301:6:HAL_TIM_Base_MspInit	40	static
-../Core/Src/tim.c:464:6:HAL_TIM_PWM_MspInit	24	static
-../Core/Src/tim.c:479:6:HAL_TIM_MspPostInit	56	static
-../Core/Src/tim.c:558:6:HAL_TIM_Base_MspDeInit	16	static
-../Core/Src/tim.c:636:6:HAL_TIM_PWM_MspDeInit	16	static
+../Core/Src/tim.c:452:6:HAL_TIM_PWM_MspInit	24	static
+../Core/Src/tim.c:467:6:HAL_TIM_MspPostInit	56	static
+../Core/Src/tim.c:546:6:HAL_TIM_Base_MspDeInit	16	static
+../Core/Src/tim.c:624:6:HAL_TIM_PWM_MspDeInit	16	static

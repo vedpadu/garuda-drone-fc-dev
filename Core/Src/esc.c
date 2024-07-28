@@ -10,44 +10,54 @@
 
 uint8_t armed = 0;
 uint16_t initializationCtr = 0;
+uint16_t masterCtr = 0;
 uint8_t do_init_throttle_down = 0;
 uint32_t motorDshotBuffers[MOTOR_COUNT][DSHOT_FRAME_SIZE] = {{0}};
 uint16_t motorOutputs[MOTOR_COUNT] = {INIT_THROTTLE_MIN, INIT_THROTTLE_MIN, INIT_THROTTLE_MIN, INIT_THROTTLE_MIN};
 motorPWMTim_t motorPWMTims[4] = {
-		{1, &htim2, TIM_CHANNEL_3}, // black black
-		{2, &htim2, TIM_CHANNEL_1}, // red black
-		{3, &htim4, TIM_CHANNEL_3}, // red red
-		{0, &htim4, TIM_CHANNEL_2}, // black red
+		{1, &htim2, TIM_CHANNEL_3, &hdma_tim2_ch3_up}, // black black
+		{3, &htim4, TIM_CHANNEL_3, &hdma_tim4_ch3}, // red red
+		{0, &htim4, TIM_CHANNEL_2, &hdma_tim4_ch2}, // black red
+		{2, &htim2, TIM_CHANNEL_1, &hdma_tim2_ch1}, // red black // not working
 };
+
 
 // deals with the initialization as well as the motor setting
 void updateESC(){
+	masterCtr++;
 	// wait power up
-	 if (initializationCtr < ESC_POWER_UP_TIME) {
+	if(masterCtr % 4 == 0){
+		if (initializationCtr < ESC_POWER_UP_TIME) {
 		  ++initializationCtr;
 		  return;
 	  }
+	}
 
-	 int i;
-	 for(i = 0;i < 1;i++){
-		 if(!armed){
-			 dshot600(motorDshotBuffers[i],motorOutputs[i]);
-		 }
+	if (initializationCtr < ESC_POWER_UP_TIME) {
+		return;
+	}
 
-		 HAL_TIM_PWM_Start_DMA(motorPWMTims[i].tim, motorPWMTims[i].channel, motorDshotBuffers[i], DSHOT_FRAME_SIZE);
+	HAL_TIM_PWM_Start_DMA(motorPWMTims[masterCtr % 4].tim, motorPWMTims[masterCtr % 4].channel, motorDshotBuffers[masterCtr % 4], 18);
+
+	 if(!armed){
+
+		 dshot600(motorDshotBuffers[masterCtr % 4],motorOutputs[masterCtr % 4]);
+	 }
+	 if(masterCtr % 4 != 0){
+		 return;
 	 }
 
-
-
-	  if (initializationCtr > ESC_POWER_UP_TIME+INIT_THROTTLE_MAX*6){
-		 armed = 1;	//the arming sequence is ended
+	 if(armed){
 		 return;
-	  }
+	 }
+
+	 if (!armed && initializationCtr > ESC_POWER_UP_TIME+INIT_THROTTLE_MAX*6){
+		 doBlink = 1;
+		 armed = 1;
+	 }
 
 	  ++initializationCtr;
 
-	  // creates a triangle necessary for the initialization
-	  //int j;
 	  if (do_init_throttle_down) {
 		 motorOutputs[0]--;
 		 motorOutputs[1]--;
@@ -71,36 +81,20 @@ void updateESC(){
 			 motorOutputs[1] = INIT_THROTTLE_MAX;
 			 motorOutputs[2] = INIT_THROTTLE_MAX;
 			 motorOutputs[3] = INIT_THROTTLE_MAX;
-			 do_init_throttle_down=1; // making sure they all hit the max
+			 do_init_throttle_down = 1;
 		 }
 	 }
+}
 
-//	  for(j = 0;j < MOTOR_COUNT;j++){
-//		  if (do_init_throttle_down) {
-//			 motorOutputs[j]--;
-//			 if (motorOutputs[j]<INIT_THROTTLE_MIN){
-//				 motorOutputs[j]=INIT_THROTTLE_MIN;
-//			 }
-//
-//		 }
-//		 else {
-//			 motorOutputs[j]++;
-//			 if (motorOutputs[j] > INIT_THROTTLE_MAX) {
-//				 motorOutputs[j] = INIT_THROTTLE_MAX;
-//				 if(j == MOTOR_COUNT - 1){
-//					do_init_throttle_down=1; // making sure they all hit the max
-//				 }
-//			 }
-//		 }
-//	  }
-
+motorPWMTim_t* getTims(){
+	return motorPWMTims;
 }
 
 void setMotorOutputs(uint16_t* desiredOut){
 	if(armed){
-		memcpy(motorOutputs, desiredOut, MOTOR_COUNT);
+		memcpy(motorOutputs, desiredOut, MOTOR_COUNT * sizeof(uint16_t));
 		int i;
-		for(i = 0;i < 1;i++){
+		for(i = 0;i < 4;i++){
 			dshot600(motorDshotBuffers[i],motorOutputs[i]);
 		}
 	}
@@ -109,32 +103,30 @@ void setMotorOutputs(uint16_t* desiredOut){
 // constructs a dshot packet for a given value
 void dshot600(uint32_t *motor, uint16_t value)
 {
-  uint16_t packet = value << 1;
+	uint16_t packet = value << 1;
 
-  // compute checksum
-  int csum = 0;
-  int csum_data = packet;
+	// compute checksum
+	int csum = 0;
+	int csum_data = packet;
 
-  motor[0] = 0;
-  for (int i = 1; i < 4; i++) {
+
+	motor[0] = 0;
+	for (int i = 1; i < 4; i++) {
     csum ^=  csum_data;   // xor data by nibbles
-    csum_data >>= 4;
-  }
+    	csum_data >>= 4;
+	}
+	csum &= 0xf;
 
-  // preserves only last 4 bits
-  csum &= 0xf;
+	// append checksum
+	packet = (packet << 4) | csum;
 
-  // append checksum
-  packet = (packet << 4) | csum;
+	// encoding
+	int i;
+	for (i = 1; i < 17; i++)
+	{
+		motor[i] = (packet & 0x8000) ? MOTOR_BIT_1 : MOTOR_BIT_0;  // MSB first
+	    packet <<= 1;
+	}
 
-  // encoding
-  int i;
-  for (i = 0; i < 16; i++)
-  {
-      motor[i] = (packet & 0x8000) ? MOTOR_BIT_1 : MOTOR_BIT_0;  // MSB first
-      packet <<= 1;
-  }
-
-  motor[16] = 0;
-  motor[17] = 0;
+	motor[i++] = 0;
 }

@@ -168,7 +168,7 @@ uint8_t doFhssIrq();
 uint32_t fhssGetNextFreq();
 
 void clockPhaseUpdate(uint32_t timeMicros);
-void setLastClockTime(uint32_t timeMicros, int* counter);
+void setLastClockTime(uint32_t timeMicros);
 void setLastPacketTime(uint32_t timeMicros);
 //void handleConnectionState(uint32_t timeMicros);
 

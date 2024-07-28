@@ -68,10 +68,6 @@ float lsb_to_mps2(int16_t val, float g_range, uint8_t bit_width);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 uint32_t last_tick_start = 0;
-uint8_t gyroBuf[2];
-float accelXFloat = (float)0;
-uint16_t accelRawX;
-uint8_t readData = 0;
 
 uint8_t radioDmaBuffer[8] = {0x00};
 uint8_t packet_pointer_buf[4] = {0x00};
@@ -79,41 +75,59 @@ uint8_t receive_packet_status[4] = {0x00};
 
 uint16_t rcData[8] = {0};
 
-int packyCount = 0;
 int countMicros = 0;
 int packetArrived = 0;
+int countMotor = 0;
+uint16_t mot_buf[4] = {0};
+uint8_t doBlink = 0;
 
-
-
+int16_t oldRCVal = 48;
+int startTick = 0;
 
 // figure out where to put these, these are specific to the motor and the gyro.. not necessary to be here
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	if (htim == &htim5) {
-			updateESC();
+		updateESC();
 	  }else if(htim == &htim9){
-		  setLastClockTime(micros(), &countMicros);
+		  setLastClockTime(micros());
 		  clockPhaseUpdate(0);
 		  doFhssIrq();
 
-		  /*if(doFhssIrq()){
-			  //char* data4 = "FHSS\n";
-			  //CDC_Transmit_FS((uint8_t *)data4, strlen(data4));
-
-		  }*/
-
 		  // Timer for radio
-		  //countMicros++;
-		  //countMicros++;
+		  countMicros++;
 	  }else if(htim == &htim10){
-		  //countMicros++;
 		  if(packetArrived){
 
+
 			  expressLrsSetRcDataFromPayload(rcData);
-			  /*HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_RESET);
-			  uint8_t transmit_buf_3[2] = {0x1D, 0x00};
-			  HAL_SPI_Transmit(&hspi3, transmit_buf_3, 2, 10);
-			  HAL_SPI_Receive(&hspi3, receive_packet_status, 4, 10); // get pin id n stuff <- huh
-			  HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_SET);*/
+				int16_t tempDat = (rcData[2] - 989)*2;
+				if(tempDat < 50){
+					tempDat = 48;
+				}else if(tempDat > 2047){
+					tempDat = 2047;
+				}
+				if(oldRCVal < tempDat){
+					if(tempDat - oldRCVal > 30){
+						tempDat = oldRCVal + 30;
+					}
+				}else{
+					if(oldRCVal - tempDat > 30){
+						tempDat = oldRCVal - 30;
+					}
+				}
+				if(tempDat < 50){
+					tempDat = 48;
+				}else if(tempDat > 2047){
+					tempDat = 2047;
+				}
+				oldRCVal = tempDat;
+				//tempDat = 1200;
+				//valMot = (uint16_t)tempDat;
+				mot_buf[0] = tempDat;
+				mot_buf[1] = tempDat;
+				mot_buf[2] = tempDat;
+				mot_buf[3] = tempDat;
+				setMotorOutputs(mot_buf);
 
 		  }
 
@@ -127,7 +141,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
   if(GPIO_Pin == GPIO_PIN_6) {
 	  readIMUData();
   } else if (GPIO_Pin == GPIO_PIN_13) {
-	  packyCount+=1;
+	  // use dma?
 	  setLastPacketTime(micros());
 	  uint8_t clear_irq[3] = {0x97, 0xFF, 0xFF};
 	  HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_RESET);
@@ -170,7 +184,6 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	uint16_t buf[4] = {0};
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -207,31 +220,65 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim9);
   HAL_TIM_Base_Start_IT(&htim5);
   HAL_TIM_Base_Start_IT(&htim10);
-  TIM3->CCR4 = 50;
-  packyCount = 0;
 
-//  HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_RESET);
-//  HAL_Delay(1);
-//  HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_SET);
-  //uint8_t *data = "SPI WORKIG\n";
 
-  //uint8_t CHIP_ID_READ[2] = {0x80 | 0x00, 0x00};
+  // tim 2 channel 1 only
+
+  // circular mode notes
+  /*__HAL_RCC_TIM2_CLK_ENABLE();
+  TIM2->PSC = (uint16_t)3;
+  TIM2->ARR = (uint32_t)19;
+  TIM2->CCMR1 = TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1PE;
+  //TIM2->CCMR1 |= TIM_CCMR1_OC1PE;
+
+  TIM2->CCER = TIM_CCER_CC1E;
+
+  TIM2->DIER = TIM_DIER_CC1DE;
+
+  TIM2->CR1 = TIM_CR1_ARPE;
+
+  //TIM2->CCER |
+
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+
+  // dma 1 stream 5
+  DMA1_Stream5->CR = DMA_SxCR_MSIZE_1 | DMA_SxCR_PSIZE_1 | DMA_SxCR_MINC | DMA_SxCR_CIRC| DMA_SxCR_DIR_0 | DMA_CHANNEL_3 | DMA_SxCR_PL_1;
+
+
+  //DMA1_Stream5->CMAR = (uint32_t)motorDMABuf;
+  //DMA1_Channel5->CNDTR = (uint16_t)18;
+  DMA1_Stream5->M0AR = (uint32_t)motorDMABuf;
+  DMA1_Stream5->NDTR |= (uint32_t)18;
+  DMA1_Stream5->PAR = (uint32_t)(&TIM2->CCR1);
+
+  //dshot600(motorDMABuf, 48);
+
+  //DMA1_Stream5->CR |= DMA_IT_TC | DMA_IT_TE | DMA_IT_DME;
+
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Alternate = GPIO_AF1_TIM2;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  //DMA1_Stream5->PAR = (uint32_t)(&TIM2->CCR1);*/
+
+  //HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_1, motorDMABuf, 18);
+
+
+  startTick = HAL_GetTick();
+
   initExpressLRS();
   IMUInit();
-  //initSX1280();
-  //initSX1280();
-//  uint8_t k = 0;
-//
-//  uint8_t fhssSeq[256] = {0};
-//  int32_t freqOffset;
-//  uint32_t currentFreq;
-//  uint8_t nonceRX;
-  /*HAL_FLASH_Unlock();
-	FLASH_Erase_Sector(FLASH_SECTOR_7, VOLTAGE_RANGE_3);
-	HAL_FLASH_Lock();*/
+
+  // clock micros init
   CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-	DWT->CTRL |= 1;
-	DWT->CYCCNT = 0;
+  DWT->CTRL |= 1;
+  DWT->CYCCNT = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -242,157 +289,15 @@ int main(void)
 	uint32_t currentTick = HAL_GetTick();
 	if(currentTick - last_tick_start > 1000)
 	{
-		/*uint8_t getStatus = 0xC0;
-		uint8_t status_buf[1] = {0x00};
-		HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_RESET);
-		HAL_SPI_Transmit(&hspi3, &getStatus, 1, 10);
-		HAL_SPI_Receive(&hspi3, status_buf, 1, 10);
-		HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_SET);*/
-		//return status_buf[0];
-		//displayInt("rateIndex", getRateIndex());
-		/*uint8_t rateInd = getRateIndex();
-		char* rateIndString = convert(&rateInd);
-		char* toSend = malloc(10);
-		toSend = strcat(toSend, rateIndString);
-		toSend = strcat(toSend, "\n");
-		CDC_Transmit_FS((uint8_t*)toSend, strlen(toSend));
-		free(toSend);
-		free(rateIndString);*/
-		//displayInt("packetCount", packetCount);
-		displayInts4("packetCount", packyCount, "timClicks", rcData[2], "phaseDoff", getPhaseDiff(), "offset", getOffset());
-		//displayInt("micros", countMicros);
-		//uint8_t val = initFlashMemoryConfig(3);
-		/*char* dataMem = convert(&out_buf[4]);
-		char* test3 = malloc(10);
-		test3 = strcat(test3, dataMem);
-		test3 = strcat(test3,"\n");*/
-		//CDC_Transmit_FS((uint8_t*)test3, strlen(test3));
-		//k++;
-		if(spiWorking){
+		displayInts4("test1", countGyros, "rc", rcData[2], "test2", countMotor, "offset", getOffset());
+		if(doBlink){
 			HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
 		}
 		//uint8_t busy = (uint8_t)HAL_GPIO_ReadPin(RX_SPI_BUSY_GPIO_Port, RX_SPI_BUSY_Pin);
 
-		/*uint8_t clear_irq[3] = {0x97, 0xFF, 0xFF};
-	    HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_RESET);
-	    HAL_SPI_Transmit(&hspi3, clear_irq, 3, 10);
-	    HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_SET);
-
-
-
-
-		// read 0x901
-		uint8_t read_buf_2[5] = {0x00};
-		uint8_t read_packet_len_buff[5] = {0x19, 0x09, 0x01, 0x00};
-		HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_RESET);
-		HAL_SPI_Transmit(&hspi3, read_packet_len_buff, 5, 10);
-		HAL_SPI_Receive(&hspi3, read_buf_2, 5, 10);
-		HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_SET);
-		readData = receive_packet_status[0];*/
-		//01011000 (01100000) -> 01000000 (01001000)
-
-
-		/*char* data = convert(&radioDmaBuffer[0]);
-		char* data2 = convert(&radioDmaBuffer[1]);
-		char* data3 = convert(&radioDmaBuffer[2]);
-		char* data4 = convert(&radioDmaBuffer[3]);
-		char* data5 = convert(&radioDmaBuffer[4]);
-		char* data6 = convert(&radioDmaBuffer[5]);
-		char* data7 = convert(&radioDmaBuffer[6]);
-		char* data8 = convert(&radioDmaBuffer[7]);
-		char* data9 = convert(&radioDmaBuffer[0]);
-		char* data10 = convert(&radioDmaBuffer[1]);
-		char* data11 = convert(&radioDmaBuffer[2]);
-		char* data12 = convert(&receive_packet_status[0]);
-		char* data13 = convert(&receive_packet_status[1]);
-		char* data14 = convert(&receive_packet_status[2]);
-		char* data15 = convert(&receive_packet_status[3]);
-		char* data16 = convert(&packet_pointer_buf[0]);
-		char* data17 = convert(&packet_pointer_buf[1]);
-		char* test = malloc(8 * 17 + 17 + 1 + 1);
-		strcat(test, data);
-		strcat(test, " ");
-		strcat(test, data2);
-		strcat(test, " ");
-		strcat(test, data3);
-		strcat(test, " ");
-		strcat(test, data4);
-		strcat(test, " ");
-		strcat(test, data5);
-		strcat(test, " ");
-		strcat(test, data6);
-		strcat(test, " ");
-		strcat(test, data7);
-		strcat(test, " ");
-		strcat(test, data8);
-		strcat(test, " ");
-		strcat(test, data9);
-		strcat(test, " ");
-		strcat(test, data10);
-		strcat(test, " ");
-		strcat(test, data11);
-		strcat(test, " ");
-		strcat(test, data12);
-		strcat(test, " ");
-		strcat(test, data13);
-		strcat(test, " ");
-		strcat(test, data14);
-		strcat(test, " ");
-		strcat(test, data15);
-		strcat(test, " ");
-		strcat(test, data16);
-		strcat(test, " ");
-		strcat(test, data17);
-		strcat(test, " ");
-		strcat(test, "\n");
-
-//test = malloc(9);
-
-		free(test);
-		free(data);
-		free(data2);
-		free(data3);
-		free(data4);
-		free(data5);
-		free(data6);
-		free(data7);
-		free(data8);
-		free(data9);
-		free(data10);
-		free(data11);
-		free(data12);
-		free(data13);
-		free(data14);
-		free(data15);
-		free(data16);
-		free(data17);*/
-
 		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
 		last_tick_start = currentTick;
 	}
-		uint16_t temp = rcData[2] - 989;
-		if(temp < 11 || temp > 2000){
-			temp = 0;
-		}
-		//temp = 300;
-		buf[0] = temp;
-		buf[1] = temp;
-		buf[2] = temp;
-		buf[3] = temp;
-		setMotorOutputs(buf);
-		/*if(currentTick - startingTick > 13000){
-			value = 200;
-		}else{
-			value = 200;
-		}*/
-
-	/*HAL_GPIO_WritePin(GPIOC, GPIO_PIN_15, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_14, GPIO_PIN_SET);
-	HAL_Delay(1000);
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_14, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_15, GPIO_PIN_RESET);
-	HAL_Delay(1000);*/
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

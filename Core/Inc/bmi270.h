@@ -7,6 +7,7 @@
 
 extern uint8_t spiWorking;
 extern uint8_t initWorking;
+extern int countGyros;
 
 #define hspi_bmi270 (&hspi1)
 #define exti_tim (&htim5)
