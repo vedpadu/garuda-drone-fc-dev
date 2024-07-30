@@ -1,6 +1,7 @@
 #include "bmi270.h"
 #include "spi.h"
 #include "gpio.h"
+#include "math.h"
 
 extern const uint8_t bmi270_config_file[8193];
 uint8_t spiWorking = 0;
@@ -14,9 +15,10 @@ uint8_t bmi270_data_spi_buf[13] = {0x00};
 void cs_low(){ HAL_GPIO_WritePin(CS_GPIO_Port_BMI270, CS_Pin_BMI270, GPIO_PIN_RESET); }
 void cs_high(){ HAL_GPIO_WritePin(CS_GPIO_Port_BMI270, CS_Pin_BMI270, GPIO_PIN_SET); }
 
-void BMI270ReadData(float* accelBuf, float* gyroBuf)
+void BMI270ReadData(float32_t* accelBuf, float32_t* gyroBuf)
 {
 	//accelX = 1,2; accelY = 3,4; accelZ = 5,6
+	// do dma? can be done on DMA 2
 	burst_read(BMI270_REG_ACC_DATA_X_LSB, bmi270_data_spi_buf, 12, 10);
 	uint16_t accelXBin = ((uint16_t)bmi270_data_spi_buf[2]) << 8 | bmi270_data_spi_buf[1];
 	uint16_t accelYBin = ((uint16_t)bmi270_data_spi_buf[4]) << 8 | bmi270_data_spi_buf[3];
@@ -29,13 +31,13 @@ void BMI270ReadData(float* accelBuf, float* gyroBuf)
 	int16_t gyroZSigned = (int16_t)gyroZBin;
 	gyroXSigned = gyroXSigned - (int16_t)(((int32_t) gyro_cas * (int32_t) gyroZSigned) / 512);
 
-	accelBuf[0] = lsb_to_mps2((int16_t)accelXBin, (float)2.0, 16);
-	accelBuf[1] = lsb_to_mps2((int16_t)accelYBin, (float)2.0, 16);
-	accelBuf[2] = lsb_to_mps2((int16_t)accelZBin, (float)2.0, 16);
+	accelBuf[0] = (float32_t)lsb_to_mps2((int16_t)accelXBin, (float)2.0, 16);
+	accelBuf[1] = (float32_t)lsb_to_mps2((int16_t)accelYBin, (float)2.0, 16);
+	accelBuf[2] = (float32_t)lsb_to_mps2((int16_t)accelZBin, (float)2.0, 16);
 
-	gyroBuf[0] = lsb_to_dps(gyroXSigned, (float)2000.0, 16);
-	gyroBuf[1] = lsb_to_dps((int16_t)gyroYBin, (float)2000.0, 16);
-	gyroBuf[2] = lsb_to_dps(gyroZSigned, (float)2000.0, 16);
+	gyroBuf[0] = ((float32_t)lsb_to_dps(gyroXSigned, (float)2000.0, 16)) * M_PI / 180.0;
+	gyroBuf[1] = (float32_t)lsb_to_dps((int16_t)gyroYBin, (float)2000.0, 16) * M_PI / 180.0;
+	gyroBuf[2] = (float32_t)lsb_to_dps(gyroZSigned, (float)2000.0, 16) * M_PI / 180.0;
 	countGyros+=1;
 }
 
@@ -156,7 +158,7 @@ float lsb_to_mps2(int16_t val, float g_range, uint8_t bit_width)
 
     float half_scale = (float)((pow((double)power, (double)bit_width) / 2.0f));
 
-    return (9.8 * val * g_range) / half_scale;
+    return (val * g_range) / half_scale;
 }
 
 float lsb_to_dps(int16_t val, float dps, uint8_t bit_width)

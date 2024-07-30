@@ -34,6 +34,8 @@
 #include "sx1280.h"
 #include "flashMemoryConfig.h"
 #include "esc.h"
+#include "arm_math.h"
+#include "kalman.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -133,13 +135,21 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 		  //countMicros++;
 		  //handleConnectionState(micros());
+	  }else if(htim == &htim11){
+		  if(initWorking && initialized){
+			  countMotor++;
+			  readIMUData();
+			  updateKalman(gyro, accel, 0.01);
+		  }
+
 	  }
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if(GPIO_Pin == GPIO_PIN_6) {
-	  readIMUData();
+	  // convert to a timer so that we can leave the process covariance a constant?
+
   } else if (GPIO_Pin == GPIO_PIN_13) {
 	  // use dma?
 	  setLastPacketTime(micros());
@@ -184,6 +194,23 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+	float32_t matA[15][15] = {{0.0, 0.0},
+							{0.0, 0.0}};
+	float32_t matB[15][15] = {{0.0, 0.0},
+							{0.0, 0.0}};
+
+	float32_t matC[3][3] = {0};
+	//identity(matC[0], 3);
+
+	float32_t matD[2][2] = {{1.0, 3.0},{2.0, 0.0}};
+	//injectMatrix(matC[0], matD[0], 0, 0, 3, 2);
+
+	float32_t mat_AB[15][15];
+	arm_matrix_instance_f32 mat_A_instance;
+	arm_matrix_instance_f32 mat_B_instance;
+	arm_matrix_instance_f32 mat_AB_instance;
+	arm_matrix_instance_f32 mat_C_instance;
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -214,12 +241,43 @@ int main(void)
   MX_SPI3_Init();
   MX_TIM9_Init();
   MX_TIM10_Init();
+  MX_TIM11_Init();
   /* USER CODE BEGIN 2 */
   uint32_t startingTick = HAL_GetTick();
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4);
   HAL_TIM_Base_Start_IT(&htim9);
   HAL_TIM_Base_Start_IT(&htim5);
   HAL_TIM_Base_Start_IT(&htim10);
+  HAL_TIM_Base_Start_IT(&htim11);
+
+  arm_mat_init_f32(&mat_A_instance, 15, 15, &matA[0][0]);
+  arm_mat_init_f32(&mat_B_instance, 15, 15, &matB[0][0]);
+  arm_mat_init_f32(&mat_AB_instance, 15, 15, &mat_AB[0][0]);
+
+  float32_t vectorSym[3] = {0.5, 0.6, 0.7};
+  //arm_mat_sub_f32(&mat_C_instance, &mat_C_instance, &mat_C_instance);
+
+  uint32_t tickB4 = HAL_GetTick();
+  arm_matrix_instance_f32 proc_cov = process_covariance(0.1);
+  uint32_t tickAfter = HAL_GetTick();
+
+  quaternion_t q1 = {0.6, {0.5, 0.6, 0.7}};
+  quaternion_t q2 = {0.7, {0.4, 0.3, 0.2}};
+  quaternion_t q3 = quatMultiply(q1, q2);
+
+  matA[0][0] = 2.0;
+  matA[0][1] = 4.0;
+  matA[1][0] = 1.0;
+  matA[1][1] = 4.0;
+
+  matB[0][0] = 3.0;
+  matB[0][1] = 2.0;
+  matB[1][0] = 3.0;
+  matB[1][1] = 4.0;
+
+
+  arm_mat_mult_f32(&mat_A_instance, &mat_B_instance, &mat_AB_instance);
+  //arm_mat_scale_f32(&mat_A_instance, 2.5, &mat_A_instance);
 
 
   // tim 2 channel 1 only
@@ -271,9 +329,13 @@ int main(void)
 
 
   startTick = HAL_GetTick();
+  int freed = 0;
 
   initExpressLRS();
   IMUInit();
+  quaternion_t initEst = {1.0, {0.0, 0.0, 0.0}};
+  initKalman(initEst, 0.0, 0.002, 0.01, 0.015, 0.0, 0.01);
+  mat_C_instance = quatToMatrix(q1);
 
   // clock micros init
   CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
@@ -289,9 +351,16 @@ int main(void)
 	uint32_t currentTick = HAL_GetTick();
 	if(currentTick - last_tick_start > 1000)
 	{
-		displayInts4("test1", countGyros, "rc", rcData[2], "test2", countMotor, "offset", getOffset());
-		if(doBlink){
+
+		//displayInts4("test1", countGyros, "rc", rcData[2], "test2", countMotor, "offset", getOffset());
+		displayFloats4("0", estimate.w, "1",  estimate.vec[0], "2",  estimate.vec[1], "3",  estimate.vec[2]);
+		displayInts("gyro", countGyros, "clock", countMotor);
+		if(spiWorking){
 			HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
+		}
+		if(currentTick - startTick > 8000 && !freed){
+			free(mat_C_instance.pData);
+			freed = 1;
 		}
 		//uint8_t busy = (uint8_t)HAL_GPIO_ReadPin(RX_SPI_BUSY_GPIO_Port, RX_SPI_BUSY_Pin);
 
@@ -388,9 +457,9 @@ char *convert16(uint16_t *a)
 }
 
 void displayInt(char* desc, int val){
-	int len = snprintf(NULL, 0, "%u", val);
+	int len = snprintf(NULL, 0, "%d", val);
 	char *str = malloc(len + 2 + strlen(desc) + 6);
-	snprintf(str, len + 2, "%u", val);
+	snprintf(str, len + 2, "%d", val);
 	strcat(str, ": ");
 	strcat(str, desc);
 	strcat(str, "\n");
@@ -424,6 +493,16 @@ void displayInts4(char* desc, int val, char* desc2, int val2, char* desc3, int v
 	//int len2 = snprintf(NULL, 0, "%u", val2);
 	char *str = malloc(len + 2);
 	snprintf(str, len + 2, "%s: %d %s: %u %s: %u %s: %d\n", desc, val, desc2, val2, desc3, val3, desc4, val4);
+	// do stuff with result
+	CDC_Transmit_FS((uint8_t*)str, strlen(str));
+	free(str);
+}
+
+void displayFloats4(char* desc, float32_t val, char* desc2, float32_t val2, char* desc3, float32_t val3, char* desc4, float32_t val4){
+	int len = snprintf(NULL, 0, "%s: %f %s: %f %s: %f %s: %f\n", desc, val, desc2, val2, desc3, val3, desc4, val4);
+	//int len2 = snprintf(NULL, 0, "%u", val2);
+	char *str = malloc(len + 2);
+	snprintf(str, len + 2, "%s: %f %s: %f %s: %f %s: %f\n", desc, val, desc2, val2, desc3, val3, desc4, val4);
 	// do stuff with result
 	CDC_Transmit_FS((uint8_t*)str, strlen(str));
 	free(str);

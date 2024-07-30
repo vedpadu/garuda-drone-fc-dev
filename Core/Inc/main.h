@@ -40,6 +40,8 @@ extern TIM_HandleTypeDef htim4;
 extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi3;
 extern uint8_t doBlink;
+
+#include "arm_math.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -96,6 +98,7 @@ void displayInt(char* desc, int val);
 void displayInts(char* desc, int val, char* desc2, int val2);
 void displayInts3(char* desc, int val, char* desc2, int val2, char* desc3, int val3);
 void displayInts4(char* desc, int val, char* desc2, int val2, char* desc3, int val3, char* desc4, int val4);
+void displayFloats4(char* desc, float32_t val, char* desc2, float32_t val2, char* desc3, float32_t val3, char* desc4, float32_t val4);
 
 uint32_t micros();
 uint32_t getDeltaTime(uint32_t greater, uint32_t lesser);

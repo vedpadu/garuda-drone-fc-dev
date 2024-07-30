@@ -1,7 +1,7 @@
 #include "imu.h"
 
-float gyro[3];
-float accel[3];
+float32_t gyro[3];
+float32_t accel[3];
 
 // come on does this file need to exist?
 void IMUInit()
