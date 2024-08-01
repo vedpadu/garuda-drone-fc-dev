@@ -35,7 +35,7 @@ void BMI270ReadData(float32_t* accelBuf, float32_t* gyroBuf)
 	accelBuf[1] = (float32_t)lsb_to_mps2((int16_t)accelYBin, (float)2.0, 16);
 	accelBuf[2] = (float32_t)lsb_to_mps2((int16_t)accelZBin, (float)2.0, 16);
 
-	gyroBuf[0] = ((float32_t)lsb_to_dps(gyroXSigned, (float)2000.0, 16)) * M_PI / 180.0;
+	gyroBuf[0] = (float32_t)lsb_to_dps(gyroXSigned, (float)2000.0, 16) * M_PI / 180.0;
 	gyroBuf[1] = (float32_t)lsb_to_dps((int16_t)gyroYBin, (float)2000.0, 16) * M_PI / 180.0;
 	gyroBuf[2] = (float32_t)lsb_to_dps(gyroZSigned, (float)2000.0, 16) * M_PI / 180.0;
 	countGyros+=1;

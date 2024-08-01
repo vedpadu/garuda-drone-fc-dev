@@ -85,6 +85,9 @@ uint8_t doBlink = 0;
 
 int16_t oldRCVal = 48;
 int startTick = 0;
+int lastKalmanTick = 0;
+float32_t gyroB[3] = {(float32_t)-0.0003, (float32_t)-0.00004, (float32_t)-0.00106};
+float32_t accelB[3] = {(float32_t)0.295/9.8, (float32_t)-0.032/9.8, (float32_t)0.013/9.8};
 
 // figure out where to put these, these are specific to the motor and the gyro.. not necessary to be here
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
@@ -137,9 +140,28 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 		  //handleConnectionState(micros());
 	  }else if(htim == &htim11){
 		  if(initWorking && initialized){
-			  countMotor++;
+
 			  readIMUData();
-			  updateKalman(gyro, accel, 0.01);
+			  gyro[0] = -(gyro[0] - gyroB[0]);
+			  gyro[1] = gyro[1] - gyroB[1];
+			  gyro[2] = -(gyro[2] - gyroB[2]);
+
+			  accel[0] = accel[0] - accelB[0];
+			  accel[1] = -(accel[1] - accelB[1]);
+			  accel[2] = accel[2] - accelB[2];
+
+			  //countMotor++;
+			 // displayFloats4("00", gyro[0], "01", gyro[1], "02", gyro[2], "03", accel[0]);
+			  //float32_t temp[3] = {0.0, 0.0,0.0};
+			  float32_t deltTime = (float32_t)(HAL_GetTick() - lastKalmanTick) * 0.001;
+			  dispImu(gyro, accel, deltTime);
+			  //displayFloats4("imu", estimate.w, "01",  estimate.vec[0], "02",  estimate.vec[1], "03",  estimate.vec[2]);
+			  updateKalman(gyro, accel, deltTime);
+
+			  //dispMatrixDebug(estimate_covar_mat);
+			  lastKalmanTick = HAL_GetTick();
+			  dispEst(estimate);
+			  dispMatrixDebug(G_mat);
 		  }
 
 	  }
@@ -334,7 +356,8 @@ int main(void)
   initExpressLRS();
   IMUInit();
   quaternion_t initEst = {1.0, {0.0, 0.0, 0.0}};
-  initKalman(initEst, 0.0, 0.002, 0.01, 0.015, 0.0, 0.01);
+  lastKalmanTick = HAL_GetTick();
+  initKalman(initEst, 0.0, 0.005 , 0.0000005, 0.1, 0.0, 0.01);
   mat_C_instance = quatToMatrix(q1);
 
   // clock micros init
@@ -349,16 +372,19 @@ int main(void)
   while (1)
   {
 	uint32_t currentTick = HAL_GetTick();
+
 	if(currentTick - last_tick_start > 1000)
 	{
 
 		//displayInts4("test1", countGyros, "rc", rcData[2], "test2", countMotor, "offset", getOffset());
-		displayFloats4("0", estimate.w, "1",  estimate.vec[0], "2",  estimate.vec[1], "3",  estimate.vec[2]);
+
+		//displayFloats4("00", estimate.w, "01", estimate.vec[0], "02", estimate.vec[1], "03", estimate.vec[2]);
 		displayInts("gyro", countGyros, "clock", countMotor);
 		if(spiWorking){
 			HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
 		}
-		if(currentTick - startTick > 8000 && !freed){
+		if(currentTick - startTick > 6000 && !freed){
+			initialized = 1;
 			free(mat_C_instance.pData);
 			freed = 1;
 		}
@@ -503,6 +529,36 @@ void displayFloats4(char* desc, float32_t val, char* desc2, float32_t val2, char
 	//int len2 = snprintf(NULL, 0, "%u", val2);
 	char *str = malloc(len + 2);
 	snprintf(str, len + 2, "%s: %f %s: %f %s: %f %s: %f\n", desc, val, desc2, val2, desc3, val3, desc4, val4);
+	// do stuff with result
+	CDC_Transmit_FS((uint8_t*)str, strlen(str));
+	free(str);
+}
+
+void dispImu(float32_t* gyr, float32_t* acc, float32_t timeDelt){
+	int len = snprintf(NULL, 0, "imu,%f,%f,%f,%f,%f,%f,%f\n", gyr[0], gyr[1], gyr[2], acc[0], acc[1], acc[2], timeDelt);
+	//int len2 = snprintf(NULL, 0, "%u", val2);
+	char *str = malloc(len + 2);
+	snprintf(str, len + 2, "imu,%f,%f,%f,%f,%f,%f,%f\n", gyr[0], gyr[1], gyr[2], acc[0], acc[1], acc[2], timeDelt);
+	// do stuff with result
+	CDC_Transmit_FS((uint8_t*)str, strlen(str));
+	free(str);
+}
+
+void dispEst(quaternion_t est){
+	int len = snprintf(NULL, 0, "est,%f,%f,%f,%f\n", est.w, est.vec[0], est.vec[1], est.vec[2]);
+	//int len2 = snprintf(NULL, 0, "%u", val2);
+	char *str = malloc(len + 2);
+	snprintf(str, len + 2, "est,%f,%f,%f,%f\n", est.w, est.vec[0], est.vec[1], est.vec[2]);
+	// do stuff with result
+	CDC_Transmit_FS((uint8_t*)str, strlen(str));
+	free(str);
+}
+
+void dispMatrixDebug(float32_t* mat){
+	int len = snprintf(NULL, 0, "mat,%f,%f,%f,%f,%f,%f,%f\n", mat[0], mat[1], mat[2], mat[3], mat[4], mat[5], mat[6]);
+	//int len2 = snprintf(NULL, 0, "%u", val2);
+	char *str = malloc(len + 2);
+	snprintf(str, len + 2, "mat,%f,%f,%f,%f,%f,%f,%f\n", mat[0], mat[1], mat[2], mat[3], mat[4], mat[5], mat[6]);
 	// do stuff with result
 	CDC_Transmit_FS((uint8_t*)str, strlen(str));
 	free(str);

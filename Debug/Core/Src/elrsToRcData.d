@@ -32,7 +32,7 @@ Core/Src/elrsToRcData.o: ../Core/Src/elrsToRcData.c \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_usb.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd_ex.h \
  ../Core/Inc/main.h ../Middlewares/ST/ARM/DSP/Inc/arm_math.h \
- ../Drivers/CMSIS/Include/cmsis_compiler.h \
+ ../Drivers/CMSIS/Include/cmsis_compiler.h ../Core/Inc/kalman.h \
  ../Core/Inc/flashMemoryConfig.h
 ../Core/Inc/elrsToRcData.h:
 ../Core/Inc/expresslrs.h:
@@ -71,4 +71,5 @@ Core/Src/elrsToRcData.o: ../Core/Src/elrsToRcData.c \
 ../Core/Inc/main.h:
 ../Middlewares/ST/ARM/DSP/Inc/arm_math.h:
 ../Drivers/CMSIS/Include/cmsis_compiler.h:
+../Core/Inc/kalman.h:
 ../Core/Inc/flashMemoryConfig.h:

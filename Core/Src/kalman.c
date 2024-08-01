@@ -102,7 +102,7 @@ void initKalman(quaternion_t initial_est, float32_t estimate_cov, float32_t gyro
 	arm_mat_init_f32(&zero_inst, 15, 15, zero_mat[0]);
 
 	identity_inst = generateDiagonalMatrix(identity_mat[0], 15, 1.0);
-	initialized = 1;
+
 }
 
 // assumes Q instance already initialized
@@ -143,7 +143,8 @@ void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t time_de
 	// integrate angular velocity
 	quaternion_t foldQuat = {0.0, {gyroMeas[0], gyroMeas[1], gyroMeas[2]}};
 	addToQuat(&estimate, quatMultiplyScalar(quatMultiply(estimate, foldQuat), time_delta * 0.5));
-	normalizeQuaternion(&estimate);
+	normalizeQuaternion(&estimate); // slightly different values
+
 
 	// form process model
 	arm_matrix_instance_f32 G1_inst = skewSymmetric(gyroMeas);
@@ -156,6 +157,7 @@ void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t time_de
 	arm_mat_scale_f32(&G3_inst, -1.0, &G3_inst);
 	arm_matrix_instance_f32 G2_temp = skewSymmetric(accMeas);
 	arm_mat_mult_f32(&G3_inst, &G2_temp, &G2_inst);
+	//displayFloats4("00", gyroMeas[0], "01", gyroMeas[1], "02", gyroMeas[2], "03", G1_inst.pData[3]);
 
 	injectMatrix(G_mat[0], G1_inst.pData, 0, 0, 15, 3, 1);
 	injectMatrix(G_mat[0], G2_inst.pData, 3, 0, 15, 3, 0);
@@ -187,8 +189,8 @@ void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t time_de
 	arm_mat_sub_f32(&H, &H, &H); // zero the matrix
 
 	quaternion_t inverseEst = quatInverse(estimate);
-	float32_t vec[3] = {0.0, 0.0, -1.0};
-	rotateVector3ByQuaternion(vec, inverseEst);
+	float32_t vec[3] = {0.0, 0.0, 1.0};
+	rotateVector3ByQuaternion(vec, inverseEst); // verify this is working
 	injectMatrix(H_mat[0], skewSymmetric(vec).pData, 0, 0, 15, 3, 1);
 	float32_t identityTemp[3][3] = {0}; // permanent 3x3 ident?
 	injectMatrix(H_mat[0], generateDiagonalMatrix(identityTemp[0], 3, 1.0).pData, 0, 12, 15, 3, 0);
@@ -202,7 +204,7 @@ void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t time_de
 
 	// update with a posteriori covariance
 	arm_mat_mult_f32(&K, &H, &estimate_covar_mid);
-	arm_mat_sub_f32(&identity_inst, &estimate_covar_mid, &estimate_covar_mid);
+	arm_mat_sub_f32(&identity_inst, &estimate_covar_mid, &estimate_covar_mid); // is this legit?
 	arm_mat_mult_f32(&estimate_covar_mid, &estimate_covariance, &estimate_covar_copy);
 	arm_mat_add_f32(&estimate_covar_copy, &zero_inst, &estimate_covariance); // copying the matrix kind of scuffed
 
@@ -356,7 +358,7 @@ void diagonalMat(float32_t* matrix, uint8_t size, float32_t value){
 	}
 }
 
-void injectMatrix(float32_t* outMat, float32_t* inMat, uint8_t x0, uint8_t y0, uint8_t sizeOut, uint8_t sizeIn, uint8_t doFree){
+void injectMatrix(float32_t* outMat, float32_t* inMat, uint8_t y0, uint8_t x0, uint8_t sizeOut, uint8_t sizeIn, uint8_t doFree){
 	int x;
 	int y;
 	for(y = 0;y < sizeIn;y++){
@@ -416,7 +418,7 @@ void addToQuat(quaternion_t* q1, quaternion_t q2){
 }
 
 void normalizeQuaternion(quaternion_t* q){
-	*q = quatDivideScalar(*q, quatSquareMag(*q));
+	*q = quatDivideScalar(*q, pow(quatSquareMag(*q), 0.5));
 }
 
 quaternion_t quatConjugate(quaternion_t q){
