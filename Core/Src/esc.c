@@ -15,10 +15,10 @@ uint8_t do_init_throttle_down = 0;
 uint32_t motorDshotBuffers[MOTOR_COUNT][DSHOT_FRAME_SIZE] = {{0}};
 uint16_t motorOutputs[MOTOR_COUNT] = {INIT_THROTTLE_MIN, INIT_THROTTLE_MIN, INIT_THROTTLE_MIN, INIT_THROTTLE_MIN};
 motorPWMTim_t motorPWMTims[4] = {
-		{1, &htim2, TIM_CHANNEL_3, &hdma_tim2_ch3_up}, // black black
-		{3, &htim4, TIM_CHANNEL_3, &hdma_tim4_ch3}, // red red
-		{0, &htim4, TIM_CHANNEL_2, &hdma_tim4_ch2}, // black red
-		{2, &htim2, TIM_CHANNEL_1, &hdma_tim2_ch1}, // red black // not working
+		{0, &htim4, TIM_CHANNEL_2, &hdma_tim4_ch2}, // black red // + pitch + roll
+		{1, &htim2, TIM_CHANNEL_3, &hdma_tim2_ch3_up}, // black black // - pitch + roll
+		{2, &htim4, TIM_CHANNEL_3, &hdma_tim4_ch3}, // red red // - pitch - roll
+		{3, &htim2, TIM_CHANNEL_1, &hdma_tim2_ch1}, // red black // + pitch - roll
 };
 
 

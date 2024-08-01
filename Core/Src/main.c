@@ -36,6 +36,7 @@
 #include "esc.h"
 #include "arm_math.h"
 #include "kalman.h"
+#include "motorMixer.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -85,7 +86,7 @@ uint8_t doBlink = 0;
 
 int16_t oldRCVal = 48;
 int startTick = 0;
-int lastKalmanTick = 0;
+uint32_t lastKalmanTick = 0;
 float32_t gyroB[3] = {(float32_t)-0.0003, (float32_t)-0.00004, (float32_t)-0.00106};
 float32_t accelB[3] = {(float32_t)0.295/9.8, (float32_t)-0.032/9.8, (float32_t)0.013/9.8};
 
@@ -105,34 +106,37 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 
 			  expressLrsSetRcDataFromPayload(rcData);
-				int16_t tempDat = (rcData[2] - 989)*2;
-				if(tempDat < 50){
-					tempDat = 48;
-				}else if(tempDat > 2047){
-					tempDat = 2047;
-				}
-				if(oldRCVal < tempDat){
-					if(tempDat - oldRCVal > 30){
-						tempDat = oldRCVal + 30;
-					}
-				}else{
-					if(oldRCVal - tempDat > 30){
-						tempDat = oldRCVal - 30;
-					}
-				}
-				if(tempDat < 50){
-					tempDat = 48;
-				}else if(tempDat > 2047){
-					tempDat = 2047;
-				}
-				oldRCVal = tempDat;
-				//tempDat = 1200;
-				//valMot = (uint16_t)tempDat;
-				mot_buf[0] = tempDat;
-				mot_buf[1] = tempDat;
-				mot_buf[2] = tempDat;
-				mot_buf[3] = tempDat;
+			  motorMixerUpdate(rcData, mot_buf, gyro);
+
+//				int16_t tempDat = (rcData[2] - 989)*2;
+//				if(tempDat < 50){
+//					tempDat = 48;
+//				}else if(tempDat > 2047){
+//					tempDat = 2047;
+//				}
+//				if(oldRCVal < tempDat){
+//					if(tempDat - oldRCVal > 30){
+//						tempDat = oldRCVal + 30;
+//					}
+//				}else{
+//					if(oldRCVal - tempDat > 30){
+//						tempDat = oldRCVal - 30;
+//					}
+//				}
+//				if(tempDat < 50){
+//					tempDat = 48;
+//				}else if(tempDat > 2047){
+//					tempDat = 2047;
+//				}
+//				oldRCVal = tempDat;
+//				//tempDat = 1200;
+//				//valMot = (uint16_t)tempDat;
+//				mot_buf[0] = tempDat;
+//				mot_buf[1] = tempDat;
+//				mot_buf[2] = tempDat;
+//				mot_buf[3] = tempDat;
 				setMotorOutputs(mot_buf);
+				countMotor++;
 
 		  }
 
@@ -142,6 +146,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 		  if(initWorking && initialized){
 
 			  readIMUData();
+
+
+			  //countMotor++;
+			 // displayFloats4("00", gyro[0], "01", gyro[1], "02", gyro[2], "03", accel[0]);
+			  //float32_t temp[3] = {0.0, 0.0,0.0};
+			  float32_t currTick = micros();
+			  float32_t deltTime = (float32_t)(getDeltaTime(currTick, lastKalmanTick)) * 0.000001;
+			  lastKalmanTick = currTick;
+			  //dispImu(gyro, accel, deltTime);
 			  gyro[0] = -(gyro[0] - gyroB[0]);
 			  gyro[1] = gyro[1] - gyroB[1];
 			  gyro[2] = -(gyro[2] - gyroB[2]);
@@ -149,19 +162,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 			  accel[0] = accel[0] - accelB[0];
 			  accel[1] = -(accel[1] - accelB[1]);
 			  accel[2] = accel[2] - accelB[2];
-
-			  //countMotor++;
-			 // displayFloats4("00", gyro[0], "01", gyro[1], "02", gyro[2], "03", accel[0]);
-			  //float32_t temp[3] = {0.0, 0.0,0.0};
-			  float32_t deltTime = (float32_t)(HAL_GetTick() - lastKalmanTick) * 0.001;
-			  dispImu(gyro, accel, deltTime);
 			  //displayFloats4("imu", estimate.w, "01",  estimate.vec[0], "02",  estimate.vec[1], "03",  estimate.vec[2]);
 			  updateKalman(gyro, accel, deltTime);
 
 			  //dispMatrixDebug(estimate_covar_mat);
-			  lastKalmanTick = HAL_GetTick();
-			  dispEst(estimate);
-			  dispMatrixDebug(G_mat);
+
+			  //dispEst(estimate);
+			  //dispMatrixDebug(G_mat);
 		  }
 
 	  }
@@ -355,8 +362,9 @@ int main(void)
 
   initExpressLRS();
   IMUInit();
+  motorMixerInit();
   quaternion_t initEst = {1.0, {0.0, 0.0, 0.0}};
-  lastKalmanTick = HAL_GetTick();
+  lastKalmanTick = micros();
   initKalman(initEst, 0.0, 0.005 , 0.0000005, 0.1, 0.0, 0.01);
   mat_C_instance = quatToMatrix(q1);
 
@@ -376,7 +384,7 @@ int main(void)
 	if(currentTick - last_tick_start > 1000)
 	{
 
-		//displayInts4("test1", countGyros, "rc", rcData[2], "test2", countMotor, "offset", getOffset());
+		displayInts4("rc0", rcData[0], "rc1", rcData[1], "rc2", rcData[2], "rc3", rcData[3]);
 
 		//displayFloats4("00", estimate.w, "01", estimate.vec[0], "02", estimate.vec[1], "03", estimate.vec[2]);
 		displayInts("gyro", countGyros, "clock", countMotor);
@@ -384,7 +392,8 @@ int main(void)
 			HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
 		}
 		if(currentTick - startTick > 6000 && !freed){
-			initialized = 1;
+			//initialized = 1;
+			//lastKalmanTick = micros();
 			free(mat_C_instance.pData);
 			freed = 1;
 		}

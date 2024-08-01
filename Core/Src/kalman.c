@@ -102,7 +102,7 @@ void initKalman(quaternion_t initial_est, float32_t estimate_cov, float32_t gyro
 	arm_mat_init_f32(&zero_inst, 15, 15, zero_mat[0]);
 
 	identity_inst = generateDiagonalMatrix(identity_mat[0], 15, 1.0);
-
+	initialized = 1;
 }
 
 // assumes Q instance already initialized
@@ -220,7 +220,6 @@ void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t time_de
 	float32_t addToAccelBias[3] = {aposteriori_mat[12][0], aposteriori_mat[13][0], aposteriori_mat[14][0]};
 	addToVector(gyro_bias, addToGyroBias, 3);
 	addToVector(accelerometer_bias, addToAccelBias, 3);
-
 }
 
 // has to be freed
