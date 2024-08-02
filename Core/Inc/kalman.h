@@ -9,6 +9,7 @@
 #define INC_KALMAN_H_
 
 #include "stdint.h"
+#include "arm_math.h"
 
 typedef struct quaternion_s {
 	float32_t w;

@@ -103,6 +103,7 @@ void displayFloats4(char* desc, float32_t val, char* desc2, float32_t val2, char
 void dispImu(float32_t* gyr, float32_t* acc, float32_t timeDelt);
 void dispEst(quaternion_t est);
 void dispMatrixDebug(float32_t* mat);
+void dispEuler(float32_t* eul);
 
 uint32_t micros();
 uint32_t getDeltaTime(uint32_t greater, uint32_t lesser);

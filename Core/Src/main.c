@@ -106,7 +106,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 
 			  expressLrsSetRcDataFromPayload(rcData);
-			  motorMixerUpdate(rcData, mot_buf, gyro);
+			  motorMixerUpdate(rcData, mot_buf, gyro, estimate);
 
 //				int16_t tempDat = (rcData[2] - 989)*2;
 //				if(tempDat < 50){
@@ -140,6 +140,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 		  }
 
+		  //dispEuler(eulerAttitude);
+
 		  //countMicros++;
 		  //handleConnectionState(micros());
 	  }else if(htim == &htim11){
@@ -167,7 +169,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 			  //dispMatrixDebug(estimate_covar_mat);
 
-			  //dispEst(estimate);
+
+			 // dispEst(estimate);
+
 			  //dispMatrixDebug(G_mat);
 		  }
 
@@ -548,6 +552,16 @@ void dispImu(float32_t* gyr, float32_t* acc, float32_t timeDelt){
 	//int len2 = snprintf(NULL, 0, "%u", val2);
 	char *str = malloc(len + 2);
 	snprintf(str, len + 2, "imu,%f,%f,%f,%f,%f,%f,%f\n", gyr[0], gyr[1], gyr[2], acc[0], acc[1], acc[2], timeDelt);
+	// do stuff with result
+	CDC_Transmit_FS((uint8_t*)str, strlen(str));
+	free(str);
+}
+
+void dispEuler(float32_t* eul){
+	int len = snprintf(NULL, 0, "euler,%f,%f,%f\n", eul[0], eul[1], eul[2]);
+	//int len2 = snprintf(NULL, 0, "%u", val2);
+	char *str = malloc(len + 2);
+	snprintf(str, len + 2, "euler,%f,%f,%f\n", eul[0], eul[1], eul[2]);
 	// do stuff with result
 	CDC_Transmit_FS((uint8_t*)str, strlen(str));
 	free(str);
