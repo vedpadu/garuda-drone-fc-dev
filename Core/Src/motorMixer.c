@@ -6,6 +6,7 @@
  */
 #include "motorMixer.h"
 #include "imu.h"
+#include "main.h"
 #include "math.h"
 
 //uint16_t motorOut[MOTOR_COUNT] = {INIT_THROTTLE_MIN, INIT_THROTTLE_MIN, INIT_THROTTLE_MIN, INIT_THROTTLE_MIN}; // values sent to motors -> between 0 and 2048
@@ -61,8 +62,12 @@ void motorMixerInit(){
 void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRate, quaternion_t attitude){
 	getRCInputs(rcData);
 	motorSetpoints.throttle = (float32_t)rcIn[2]/1000.0;
-	getDesiredRates(attitude);
-	if(motorSetpoints.throttle > 0.01){
+	//getDesiredRates(attitude);
+	float32_t pitchRate = (float32_t)rcIn[1]/125.0;
+	float32_t rollRate = (float32_t)rcIn[0]/125.0;
+	desiredRate.ratePitch = pitchRate;
+	desiredRate.rateRoll = rollRate;
+	if(motorSetpoints.throttle >= 0.01){
 		achieveDesiredRates(currentRate);
 	}else{
 		motorSetpoints.roll = 0;
@@ -89,6 +94,7 @@ void getDesiredRates(quaternion_t attitude){
 }
 
 void achieveDesiredRates(float32_t* currentRate){
+	int i;
 	PIDController_Update(&rollPID, desiredRate.rateRoll, currentRate[0]);
 	PIDController_Update(&pitchPID, desiredRate.ratePitch, currentRate[1]);
 	PIDController_Update(&yawPID, desiredRate.rateYaw, currentRate[2]);
@@ -106,19 +112,6 @@ float32_t clamp(float32_t in, float32_t max, float32_t min){
 		in = min;
 	}
 	return in;
-}
-
-void quatToEuler(quaternion_t q, float32_t* outEuler){
-
-	    float32_t roll = atan2(2*(q.w*q.vec[0] + q.vec[1]*q.vec[2]), 1 - 2*(q.vec[0]*q.vec[0] + q.vec[1]*q.vec[1]));
-	    outEuler[0] = roll;
-
-	    float32_t pitch = asin(2*(q.w*q.vec[1] - q.vec[2]*q.vec[0]));
-	    //float32_t pitch = -(M_PI/2.0) + 2.0 * atan2(sqrt(1 + 2.0 * (q.w * q.vec[1] - q.vec[0] * q.vec[2])), sqrt(1 - 2.0 * (q.w * q.vec[1]- q.vec[0] * q.vec[2])));
-	    outEuler[1] = pitch;
-
-	    float32_t yaw = atan2(2*(q.w*q.vec[2] + q.vec[0]*q.vec[1]), 1 - 2*(q.vec[1]*q.vec[1] + q.vec[2]*q.vec[2]));
-	    outEuler[2] = yaw;
 }
 
 // TODO: switch handling?

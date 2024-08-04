@@ -76,19 +76,35 @@ uint8_t radioDmaBuffer[8] = {0x00};
 uint8_t packet_pointer_buf[4] = {0x00};
 uint8_t receive_packet_status[4] = {0x00};
 
-uint16_t rcData[8] = {0};
+uint16_t rcData[8] = {0,0,0,0,0,0,0,0};
 
 int countMicros = 0;
+int countMicroTemp = 0;
 int packetArrived = 0;
 int countMotor = 0;
+
 uint16_t mot_buf[4] = {0};
 uint8_t doBlink = 0;
 
 int16_t oldRCVal = 48;
 int startTick = 0;
 uint32_t lastKalmanTick = 0;
-float32_t gyroB[3] = {(float32_t)-0.0003, (float32_t)-0.00004, (float32_t)-0.00106};
+float32_t gyroB[3] = {(float32_t)-0.001, (float32_t)-0.002, (float32_t)-0.00106};
 float32_t accelB[3] = {(float32_t)0.295/9.8, (float32_t)-0.032/9.8, (float32_t)0.013/9.8};
+uint32_t lastTimePrint = 0;
+uint16_t gyroCount = 0;
+float32_t gyroSum = 0.0;
+int16_t motorCount = 0;
+
+void dispImuAndPID(float32_t* gyr, float32_t* acc, outRates_t pidRate, rateSetpoint_t desRate){
+	int len = snprintf(NULL, 0, "imu,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", gyr[0], gyr[1], gyr[2], acc[0], acc[1], acc[2], pidRate.roll, pidRate.pitch, pidRate.yaw, desRate.rateRoll, desRate.ratePitch, desRate.rateYaw);
+	//int len2 = snprintf(NULL, 0, "%u", val2);
+	char *str = malloc(len + 2);
+	snprintf(str, len + 2, "imu,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", gyr[0], gyr[1], gyr[2], acc[0], acc[1], acc[2], pidRate.roll, pidRate.pitch, pidRate.yaw, desRate.rateRoll, desRate.ratePitch, desRate.rateYaw);
+	// do stuff with result
+	CDC_Transmit_FS((uint8_t*)str, strlen(str));
+	free(str);
+}
 
 // figure out where to put these, these are specific to the motor and the gyro.. not necessary to be here
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
@@ -100,45 +116,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 		  doFhssIrq();
 
 		  // Timer for radio
-		  countMicros++;
 	  }else if(htim == &htim10){
+		  motorCount++;
 		  if(packetArrived){
 
-
 			  expressLrsSetRcDataFromPayload(rcData);
-			  motorMixerUpdate(rcData, mot_buf, gyro, estimate);
 
-//				int16_t tempDat = (rcData[2] - 989)*2;
-//				if(tempDat < 50){
-//					tempDat = 48;
-//				}else if(tempDat > 2047){
-//					tempDat = 2047;
-//				}
-//				if(oldRCVal < tempDat){
-//					if(tempDat - oldRCVal > 30){
-//						tempDat = oldRCVal + 30;
-//					}
-//				}else{
-//					if(oldRCVal - tempDat > 30){
-//						tempDat = oldRCVal - 30;
-//					}
-//				}
-//				if(tempDat < 50){
-//					tempDat = 48;
-//				}else if(tempDat > 2047){
-//					tempDat = 2047;
-//				}
-//				oldRCVal = tempDat;
-//				//tempDat = 1200;
-//				//valMot = (uint16_t)tempDat;
-//				mot_buf[0] = tempDat;
-//				mot_buf[1] = tempDat;
-//				mot_buf[2] = tempDat;
-//				mot_buf[3] = tempDat;
-				setMotorOutputs(mot_buf);
-				countMotor++;
+			  motorMixerUpdate(rcData, mot_buf, gyro, estimate);
+			  setMotorOutputs(mot_buf);
 
 		  }
+
 
 		  //dispEuler(eulerAttitude);
 
@@ -153,9 +141,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 			  //countMotor++;
 			 // displayFloats4("00", gyro[0], "01", gyro[1], "02", gyro[2], "03", accel[0]);
 			  //float32_t temp[3] = {0.0, 0.0,0.0};
-			  float32_t currTick = micros();
-			  float32_t deltTime = (float32_t)(getDeltaTime(currTick, lastKalmanTick)) * 0.000001;
-			  lastKalmanTick = currTick;
+			  // TODO: do IN IMU
+
 			  //dispImu(gyro, accel, deltTime);
 			  gyro[0] = -(gyro[0] - gyroB[0]);
 			  gyro[1] = gyro[1] - gyroB[1];
@@ -164,15 +151,38 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 			  accel[0] = accel[0] - accelB[0];
 			  accel[1] = -(accel[1] - accelB[1]);
 			  accel[2] = accel[2] - accelB[2];
+
+			  float32_t currTick = micros();
+			  float32_t deltTime = (float32_t)(getDeltaTime(currTick, lastKalmanTick)) * 0.000001;
+			  lastKalmanTick = currTick;
+			  //dispImuAndPID(gyro, gyroPreFilt, motorSetpoints, desiredRate);
+			  //updateKalman(gyro, accel, deltTime);
 			  //displayFloats4("imu", estimate.w, "01",  estimate.vec[0], "02",  estimate.vec[1], "03",  estimate.vec[2]);
-			  updateKalman(gyro, accel, deltTime);
+			  //updateKalman(gyro, accel, deltTime);
+
 
 			  //dispMatrixDebug(estimate_covar_mat);
 
 
-			 // dispEst(estimate);
+//			  dispEst(estimate);
 
 			  //dispMatrixDebug(G_mat);
+		  }
+
+	  }else if(htim == &htim3){
+		  if(initWorking && initialized){
+			  //displayInts4("rc0", rcData[0], "rc1", rcData[1], "rc2", rcData[2], "rc3", rcData[3]);
+
+				//displayFloats4("00", estimate.w, "01", estimate.vec[0], "02", estimate.vec[1], "03", estimate.vec[2]);
+			  	uint32_t currTime = micros();
+				displayInts3("gyro", motorCount, "motorUpdate", countGyros, "delta", (getDeltaTime(currTime, lastTimePrint))/1000);
+				lastTimePrint = currTime;
+				if(spiWorking){
+					HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
+				}
+				//uint8_t busy = (uint8_t)HAL_GPIO_ReadPin(RX_SPI_BUSY_GPIO_Port, RX_SPI_BUSY_Pin);
+
+				HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
 		  }
 
 	  }
@@ -277,11 +287,14 @@ int main(void)
   MX_TIM11_Init();
   /* USER CODE BEGIN 2 */
   uint32_t startingTick = HAL_GetTick();
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4);
-  HAL_TIM_Base_Start_IT(&htim9);
-  HAL_TIM_Base_Start_IT(&htim5);
-  HAL_TIM_Base_Start_IT(&htim10);
-  HAL_TIM_Base_Start_IT(&htim11);
+  HAL_TIM_Base_Start_IT(&htim3);
+  HAL_TIM_Base_Start_IT(&htim9); // clock phase // 250 hz atm
+  HAL_TIM_Base_Start_IT(&htim5); // esc // 4000 hz
+  TIM10->DIER |= TIM_DIER_UIE;
+  HAL_Delay(1);
+  HAL_TIM_Base_Start_IT(&htim10); // motor // trying to get 1000 hz // this clock only psc work?
+  HAL_Delay(1);
+  HAL_TIM_Base_Start_IT(&htim11); // imu 100 hz
 
   arm_mat_init_f32(&mat_A_instance, 15, 15, &matA[0][0]);
   arm_mat_init_f32(&mat_B_instance, 15, 15, &matB[0][0]);
@@ -309,7 +322,7 @@ int main(void)
   matB[1][1] = 4.0;
 
 
-  arm_mat_mult_f32(&mat_A_instance, &mat_B_instance, &mat_AB_instance);
+  //arm_mat_mult_f32(&mat_A_instance, &mat_B_instance, &mat_AB_instance);
   //arm_mat_scale_f32(&mat_A_instance, 2.5, &mat_A_instance);
 
 
@@ -370,7 +383,7 @@ int main(void)
   quaternion_t initEst = {1.0, {0.0, 0.0, 0.0}};
   lastKalmanTick = micros();
   initKalman(initEst, 0.0, 0.005 , 0.0000005, 0.1, 0.0, 0.01);
-  mat_C_instance = quatToMatrix(q1);
+  //mat_C_instance = quatToMatrix(q1);
 
   // clock micros init
   CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
@@ -388,23 +401,24 @@ int main(void)
 	if(currentTick - last_tick_start > 1000)
 	{
 
-		displayInts4("rc0", rcData[0], "rc1", rcData[1], "rc2", rcData[2], "rc3", rcData[3]);
-
-		//displayFloats4("00", estimate.w, "01", estimate.vec[0], "02", estimate.vec[1], "03", estimate.vec[2]);
-		displayInts("gyro", countGyros, "clock", countMotor);
-		if(spiWorking){
-			HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
-		}
-		if(currentTick - startTick > 6000 && !freed){
-			//initialized = 1;
-			//lastKalmanTick = micros();
-			free(mat_C_instance.pData);
-			freed = 1;
-		}
-		//uint8_t busy = (uint8_t)HAL_GPIO_ReadPin(RX_SPI_BUSY_GPIO_Port, RX_SPI_BUSY_Pin);
-
-		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
-		last_tick_start = currentTick;
+//		displayInts4("rc0", rcData[0], "rc1", rcData[1], "rc2", rcData[2], "rc3", rcData[3]);
+//
+//		//displayFloats4("00", estimate.w, "01", estimate.vec[0], "02", estimate.vec[1], "03", estimate.vec[2]);
+//		displayInts3("gyro", countGyros, "clock", countMotor, "delta", (getDeltaTime(micros(), lastTimePrint))/1000);
+//		lastTimePrint = micros();
+//		if(spiWorking){
+//			HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
+//		}
+//		if(currentTick - startTick > 6000 && !freed){
+//			//initialized = 1;
+//			//lastKalmanTick = micros();
+//			free(mat_C_instance.pData);
+//			freed = 1;
+//		}
+//		//uint8_t busy = (uint8_t)HAL_GPIO_ReadPin(RX_SPI_BUSY_GPIO_Port, RX_SPI_BUSY_Pin);
+//
+//		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
+//		last_tick_start = currentTick;
 	}
     /* USER CODE END WHILE */
 
@@ -496,32 +510,30 @@ char *convert16(uint16_t *a)
 }
 
 void displayInt(char* desc, int val){
-	int len = snprintf(NULL, 0, "%d", val);
-	char *str = malloc(len + 2 + strlen(desc) + 6);
-	snprintf(str, len + 2, "%d", val);
-	strcat(str, ": ");
-	strcat(str, desc);
-	strcat(str, "\n");
+	int len = snprintf(NULL, 0, "%s,%d\n", desc, val);
+	//int len2 = snprintf(NULL, 0, "%u", val2);
+	char *str = malloc(len + 2);
+	snprintf(str, len + 2, "%s,%d\n", desc, val);
 	// do stuff with result
 	CDC_Transmit_FS((uint8_t*)str, strlen(str));
 	free(str);
 }
 
 void displayInts(char* desc, int val, char* desc2, int val2){
-	int len = snprintf(NULL, 0, "%s: %u %s: %u\n", desc, val, desc2, val2);
+	int len = snprintf(NULL, 0, "%s: %d %s: %d\n", desc, val, desc2, val2);
 	//int len2 = snprintf(NULL, 0, "%u", val2);
 	char *str = malloc(len + 2);
-	snprintf(str, len + 2, "%s: %u %s: %u\n", desc, val, desc2, val2);
+	snprintf(str, len + 2, "%s: %d %s: %d\n", desc, val, desc2, val2);
 	// do stuff with result
 	CDC_Transmit_FS((uint8_t*)str, strlen(str));
 	free(str);
 }
 
 void displayInts3(char* desc, int val, char* desc2, int val2, char* desc3, int val3){
-	int len = snprintf(NULL, 0, "%s: %u %s: %u %s: %u\n", desc, val, desc2, val2, desc3, val3);
+	int len = snprintf(NULL, 0, "%s: %d %s: %d %s: %d\n", desc, val, desc2, val2, desc3, val3);
 	//int len2 = snprintf(NULL, 0, "%u", val2);
 	char *str = malloc(len + 2);
-	snprintf(str, len + 2, "%s: %u %s: %u %s: %u\n", desc, val, desc2, val2, desc3, val3);
+	snprintf(str, len + 2, "%s: %d %s: %d %s: %d\n", desc, val, desc2, val2, desc3, val3);
 	// do stuff with result
 	CDC_Transmit_FS((uint8_t*)str, strlen(str));
 	free(str);
@@ -557,6 +569,8 @@ void dispImu(float32_t* gyr, float32_t* acc, float32_t timeDelt){
 	free(str);
 }
 
+
+
 void dispEuler(float32_t* eul){
 	int len = snprintf(NULL, 0, "euler,%f,%f,%f\n", eul[0], eul[1], eul[2]);
 	//int len2 = snprintf(NULL, 0, "%u", val2);
@@ -585,6 +599,19 @@ void dispMatrixDebug(float32_t* mat){
 	// do stuff with result
 	CDC_Transmit_FS((uint8_t*)str, strlen(str));
 	free(str);
+}
+
+void quatToEuler(quaternion_t q, float32_t* outEuler){
+
+	float32_t roll = atan2(2*(q.w*q.vec[0] + q.vec[1]*q.vec[2]), 1 - 2*(q.vec[0]*q.vec[0] + q.vec[1]*q.vec[1]));
+	outEuler[0] = roll;
+
+	float32_t pitch = asin(2*(q.w*q.vec[1] - q.vec[2]*q.vec[0]));
+	//float32_t pitch = -(M_PI/2.0) + 2.0 * atan2(sqrt(1 + 2.0 * (q.w * q.vec[1] - q.vec[0] * q.vec[2])), sqrt(1 - 2.0 * (q.w * q.vec[1]- q.vec[0] * q.vec[2])));
+	outEuler[1] = pitch;
+
+	float32_t yaw = atan2(2*(q.w*q.vec[2] + q.vec[0]*q.vec[1]), 1 - 2*(q.vec[1]*q.vec[1] + q.vec[2]*q.vec[2]));
+	outEuler[2] = yaw;
 }
 
 uint32_t micros(){

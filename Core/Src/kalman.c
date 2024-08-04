@@ -64,6 +64,8 @@ arm_matrix_instance_f32 estimate_covar_copy;
 
 
 float32_t gyro_bias[3] = {0};
+float32_t kalman_gyro[3] = {0};
+float32_t kalman_accel[3] = {0};
 float32_t accelerometer_bias[3] = {0};
 int initialized = 0;
 
@@ -140,6 +142,8 @@ arm_matrix_instance_f32 process_covariance(float32_t time_delta){
 void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t time_delta){
 	subtractFromVector(gyroMeas, gyro_bias, 3);
 	subtractFromVector(accMeas, accelerometer_bias, 3);
+	subtractFromVector(kalman_gyro, kalman_gyro, 3);
+	addToVector(kalman_gyro, gyroMeas, 3);
 	// integrate angular velocity
 	quaternion_t foldQuat = {0.0, {gyroMeas[0], gyroMeas[1], gyroMeas[2]}};
 	addToQuat(&estimate, quatMultiplyScalar(quatMultiply(estimate, foldQuat), time_delta * 0.5));

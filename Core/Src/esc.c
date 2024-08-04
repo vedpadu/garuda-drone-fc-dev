@@ -21,6 +21,8 @@ motorPWMTim_t motorPWMTims[4] = {
 		{3, &htim2, TIM_CHANNEL_1, &hdma_tim2_ch1}, // red black // + pitch - roll
 };
 
+uint8_t ready[4] = {0};
+
 
 // deals with the initialization as well as the motor setting
 void updateESC(){
@@ -37,12 +39,21 @@ void updateESC(){
 		return;
 	}
 
-	HAL_TIM_PWM_Start_DMA(motorPWMTims[masterCtr % 4].tim, motorPWMTims[masterCtr % 4].channel, motorDshotBuffers[masterCtr % 4], 18);
 
-	 if(!armed){
+
+	 if(!ready[masterCtr % 4]){
 
 		 dshot600(motorDshotBuffers[masterCtr % 4],motorOutputs[masterCtr % 4]);
+		 if(armed){
+			 ready[masterCtr % 4] = 1;
+			 if(masterCtr % 4 == 3){
+				 htim5.Instance->PSC = 4799;
+				 htim5.Instance->ARR = 9;
+				 //HAL_TIM_Base_Stop_IT(&htim5);
+			 }
+		 }
 	 }
+	 HAL_TIM_PWM_Start_DMA(motorPWMTims[masterCtr % 4].tim, motorPWMTims[masterCtr % 4].channel, motorDshotBuffers[masterCtr % 4], 18);
 	 if(masterCtr % 4 != 0){
 		 return;
 	 }
@@ -54,6 +65,9 @@ void updateESC(){
 	 if (!armed && initializationCtr > ESC_POWER_UP_TIME+INIT_THROTTLE_MAX*6){
 		 doBlink = 1;
 		 armed = 1;
+		// HAL_TIM_Base_Stop_IT(&htim5);
+		 //htim5.Instance->PSC = 4799;
+		 //htim5.Instance->ARR = 25;
 	 }
 
 	  ++initializationCtr;
@@ -95,7 +109,10 @@ void setMotorOutputs(uint16_t* desiredOut){
 		memcpy(motorOutputs, desiredOut, MOTOR_COUNT * sizeof(uint16_t));
 		int i;
 		for(i = 0;i < 4;i++){
+			//displayInt("i", i);
 			dshot600(motorDshotBuffers[i],motorOutputs[i]);
+			//HAL_TIM_PWM_Start_DMA(motorPWMTims[m].tim, motorPWMTims[masterCtr % 4].channel, motorDshotBuffers[masterCtr % 4], 18);
+			//HAL_TIM_PWM_Start_DMA(motorPWMTims[i].tim, motorPWMTims[i].channel, motorDshotBuffers[i], 18);
 		}
 	}
 }

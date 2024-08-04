@@ -54,7 +54,6 @@ void setBindingMode(){
 
 void setPrescaleForRateIndex(uint8_t index){
 	__HAL_TIM_SET_AUTORELOAD(elrs_tim, airRateConfig[index].interval - 1);
-	__HAL_TIM_SET_AUTORELOAD(&htim10, airRateConfig[index].interval - 1);
 }
 
 void setLastClockTime(uint32_t timeMicros){

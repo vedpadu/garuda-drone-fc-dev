@@ -1,3 +1,4 @@
+"./Core/Src/biquadlpf.o"
 "./Core/Src/bmi270.o"
 "./Core/Src/bmi270Config.o"
 "./Core/Src/dma.o"

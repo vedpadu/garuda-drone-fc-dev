@@ -20,6 +20,7 @@ extern quaternion_t estimate;
 extern int initialized;
 extern float32_t estimate_covar_mat[15][15];
 extern float32_t G_mat[15][15];
+extern float32_t kalman_gyro[3];
 
 void injectMatrix(float32_t* outMat, float32_t* inMat, uint8_t y0, uint8_t x0, uint8_t sizeOut, uint8_t sizeIn, uint8_t doFree);
 void diagonalMat(float32_t* matrix, uint8_t size, float32_t value);

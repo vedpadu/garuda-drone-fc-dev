@@ -1,4 +1,4 @@
-../Core/Src/esc.c:26:6:updateESC	12
-../Core/Src/esc.c:89:16:getTims	1
-../Core/Src/esc.c:93:6:setMotorOutputs	3
-../Core/Src/esc.c:104:6:dshot600	4
+../Core/Src/esc.c:28:6:updateESC	14
+../Core/Src/esc.c:103:16:getTims	1
+../Core/Src/esc.c:107:6:setMotorOutputs	3
+../Core/Src/esc.c:121:6:dshot600	4

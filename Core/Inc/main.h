@@ -34,15 +34,16 @@ extern "C" {
 // should prolly just include tim.h
 extern TIM_HandleTypeDef htim5;
 extern TIM_HandleTypeDef htim9;
-extern TIM_HandleTypeDef htim10;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim4;
 extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi3;
 extern uint8_t doBlink;
+extern int countMicroTemp;
 
 #include "arm_math.h"
 #include "kalman.h"
+
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -82,14 +83,12 @@ void Error_Handler(void);
 #define BIND_EXTI_IRQn EXTI2_IRQn
 #define USB_VBUS_Pin GPIO_PIN_9
 #define USB_VBUS_GPIO_Port GPIOA
-#define USB_VBUS_EXTI_IRQn EXTI9_5_IRQn
 #define RX_SPI_BUSY_Pin GPIO_PIN_13
 #define RX_SPI_BUSY_GPIO_Port GPIOA
 #define SPI3_CS_Pin GPIO_PIN_15
 #define SPI3_CS_GPIO_Port GPIOA
 #define GYRO_EXTI_Pin GPIO_PIN_6
 #define GYRO_EXTI_GPIO_Port GPIOB
-#define GYRO_EXTI_EXTI_IRQn EXTI9_5_IRQn
 #define RADIO_RST_Pin GPIO_PIN_9
 #define RADIO_RST_GPIO_Port GPIOB
 
@@ -104,6 +103,8 @@ void dispImu(float32_t* gyr, float32_t* acc, float32_t timeDelt);
 void dispEst(quaternion_t est);
 void dispMatrixDebug(float32_t* mat);
 void dispEuler(float32_t* eul);
+void quatToEuler(quaternion_t q, float32_t* outEuler);
+
 
 uint32_t micros();
 uint32_t getDeltaTime(uint32_t greater, uint32_t lesser);
