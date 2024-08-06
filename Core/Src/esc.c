@@ -47,8 +47,9 @@ void updateESC(){
 		 if(armed){
 			 ready[masterCtr % 4] = 1;
 			 if(masterCtr % 4 == 3){
+				 HAL_NVIC_SetPriority(TIM5_IRQn, 5, 0);
 				 htim5.Instance->PSC = 4799;
-				 htim5.Instance->ARR = 9;
+				 htim5.Instance->ARR = 99;
 				 //HAL_TIM_Base_Stop_IT(&htim5);
 			 }
 		 }
@@ -112,7 +113,7 @@ void setMotorOutputs(uint16_t* desiredOut){
 			//displayInt("i", i);
 			dshot600(motorDshotBuffers[i],motorOutputs[i]);
 			//HAL_TIM_PWM_Start_DMA(motorPWMTims[m].tim, motorPWMTims[masterCtr % 4].channel, motorDshotBuffers[masterCtr % 4], 18);
-			//HAL_TIM_PWM_Start_DMA(motorPWMTims[i].tim, motorPWMTims[i].channel, motorDshotBuffers[i], 18);
+			HAL_TIM_PWM_Start_DMA(motorPWMTims[i].tim, motorPWMTims[i].channel, motorDshotBuffers[i], 18);
 		}
 	}
 }

@@ -1,3 +1,6 @@
+#ifndef INC_BMI270_H_
+#define INC_BMI270_H_
+
 #include "stm32f4xx_hal.h"
 #include "main.h"
 #include "math.h"
@@ -7,10 +10,12 @@
 
 extern uint8_t spiWorking;
 extern uint8_t initWorking;
+extern uint8_t bmiReady;
 extern int countGyros;
-
+extern uint8_t bmi270_data_spi_buf[14];
 #define hspi_bmi270 (&hspi1)
 #define exti_tim (&htim5)
+
 
 typedef enum {
     BMI270_REG_CHIP_ID = 0x00,
@@ -60,6 +65,7 @@ uint8_t read_register(uint8_t rgstr, uint8_t* out_buf);
 void write_register(uint8_t rgstr, uint8_t data);
 uint8_t* burst_read(uint8_t rgstr, uint8_t* out_buf, uint16_t size, uint32_t timeout);
 void burst_transmit(uint8_t* transmit_buf, uint32_t timeout, uint16_t size);
+void cs_high();
 
 void BMI270ReadData(float* accelBuf, float* gyroBuf);
 int16_t getCAS();
@@ -71,3 +77,5 @@ void bmi270EnableSPI();
 
 float lsb_to_mps2(int16_t val, float g_range, uint8_t bit_width);
 float lsb_to_dps(int16_t val, float dps, uint8_t bit_width);
+
+#endif

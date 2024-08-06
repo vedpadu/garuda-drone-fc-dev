@@ -2,43 +2,36 @@
 #include "spi.h"
 #include "gpio.h"
 #include "math.h"
+#include "imu.h"
 
 extern const uint8_t bmi270_config_file[8193];
 uint8_t spiWorking = 0;
 uint8_t initWorking = 0;
+uint8_t bmiReady = 0;
 int countGyros = 0;
 
 // buffer to use for internal read spi calls. save memory
 uint8_t bmi270_init_spi_buf[2] = {0x00, 0x00};
-uint8_t bmi270_data_spi_buf[13] = {0x00};
+uint8_t bmi270_data_spi_buf[14] = {0x00};
+
+uint8_t tempTransmit[14] = {BMI270_REG_ACC_DATA_X_LSB | 0x80, 0x00};
 
 void cs_low(){ HAL_GPIO_WritePin(CS_GPIO_Port_BMI270, CS_Pin_BMI270, GPIO_PIN_RESET); }
 void cs_high(){ HAL_GPIO_WritePin(CS_GPIO_Port_BMI270, CS_Pin_BMI270, GPIO_PIN_SET); }
+
+
 
 void BMI270ReadData(float32_t* accelBuf, float32_t* gyroBuf)
 {
 	//accelX = 1,2; accelY = 3,4; accelZ = 5,6
 	// do dma? can be done on DMA 2
-	burst_read(BMI270_REG_ACC_DATA_X_LSB, bmi270_data_spi_buf, 12, 10);
-	uint16_t accelXBin = ((uint16_t)bmi270_data_spi_buf[2]) << 8 | bmi270_data_spi_buf[1];
-	uint16_t accelYBin = ((uint16_t)bmi270_data_spi_buf[4]) << 8 | bmi270_data_spi_buf[3];
-	uint16_t accelZBin = ((uint16_t)bmi270_data_spi_buf[6]) << 8 | bmi270_data_spi_buf[5];
-	uint16_t gyroXBin = ((uint16_t)bmi270_data_spi_buf[8]) << 8 | bmi270_data_spi_buf[7];
-	uint16_t gyroYBin = ((uint16_t)bmi270_data_spi_buf[10]) << 8 | bmi270_data_spi_buf[9];
-	uint16_t gyroZBin = ((uint16_t)bmi270_data_spi_buf[12]) << 8 | bmi270_data_spi_buf[11];
-	int16_t gyro_cas = getCAS();
-	int16_t gyroXSigned = (int16_t)gyroXBin;
-	int16_t gyroZSigned = (int16_t)gyroZBin;
-	gyroXSigned = gyroXSigned - (int16_t)(((int32_t) gyro_cas * (int32_t) gyroZSigned) / 512);
+	//displayInt("receive", tempReceive[1]);
+	cs_low();
+	HAL_SPI_TransmitReceive_DMA(hspi_bmi270, tempTransmit, bmi270_data_spi_buf, 14);
+	//cs_high();
+	//return;
+	//burst_read(BMI270_REG_ACC_DATA_X_LSB, bmi270_data_spi_buf, 12, 10);
 
-	accelBuf[0] = (float32_t)lsb_to_mps2((int16_t)accelXBin, (float)2.0, 16);
-	accelBuf[1] = (float32_t)lsb_to_mps2((int16_t)accelYBin, (float)2.0, 16);
-	accelBuf[2] = (float32_t)lsb_to_mps2((int16_t)accelZBin, (float)2.0, 16);
-
-	gyroBuf[0] = (float32_t)lsb_to_dps(gyroXSigned, (float)2000.0, 16) * M_PI / 180.0;
-	gyroBuf[1] = (float32_t)lsb_to_dps((int16_t)gyroYBin, (float)2000.0, 16) * M_PI / 180.0;
-	gyroBuf[2] = (float32_t)lsb_to_dps(gyroZSigned, (float)2000.0, 16) * M_PI / 180.0;
-	countGyros+=1;
 }
 
 int16_t getCAS(){
@@ -72,11 +65,16 @@ void BMI270Init()
 		HAL_Delay(1);
 		write_register(BMI270_REG_INIT_CTRL, 0x01);
 		HAL_Delay(40);
+		HAL_DMA_Init(&hdma_spi1_rx);
+		HAL_DMA_Init(&hdma_spi1_tx);
 		initWorking = read_register(BMI270_REG_INTERNAL_STATUS, bmi270_init_spi_buf) == 0x01;
 		if(initWorking)
 		{
 			configureBMI270();
 			configureBMI270EXTI();
+			bmiReady = 1;
+			//HAL_SPI_Transmit_DMA(hspi_bmi270, tempTransmit, 2);
+			//HAL_SPI_Receive_DMA(hspi_bmi270, tempReceive, 2);
 		}
 	}
 }

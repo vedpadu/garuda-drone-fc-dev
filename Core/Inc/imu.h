@@ -3,6 +3,7 @@
 
 extern float gyro[3];
 extern float gyroPreFilt[3];
+extern float accelPreFilt[3];
 extern float accel[3];
 
 void IMUInit();

@@ -105,6 +105,7 @@ void initKalman(quaternion_t initial_est, float32_t estimate_cov, float32_t gyro
 
 	identity_inst = generateDiagonalMatrix(identity_mat[0], 15, 1.0);
 	initialized = 1;
+	//process_covariance(0.01);
 }
 
 // assumes Q instance already initialized
@@ -140,18 +141,19 @@ arm_matrix_instance_f32 process_covariance(float32_t time_delta){
 }
 
 void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t time_delta){
-	subtractFromVector(gyroMeas, gyro_bias, 3);
+	//subtractFromVector(gyroMeas, gyro_bias, 3);
 	subtractFromVector(accMeas, accelerometer_bias, 3);
 	subtractFromVector(kalman_gyro, kalman_gyro, 3);
 	addToVector(kalman_gyro, gyroMeas, 3);
+	subtractFromVector(kalman_gyro, gyro_bias, 3);
 	// integrate angular velocity
-	quaternion_t foldQuat = {0.0, {gyroMeas[0], gyroMeas[1], gyroMeas[2]}};
+	quaternion_t foldQuat = {0.0, {kalman_gyro[0], kalman_gyro[1], kalman_gyro[2]}};
 	addToQuat(&estimate, quatMultiplyScalar(quatMultiply(estimate, foldQuat), time_delta * 0.5));
 	normalizeQuaternion(&estimate); // slightly different values
 
 
 	// form process model
-	arm_matrix_instance_f32 G1_inst = skewSymmetric(gyroMeas);
+	arm_matrix_instance_f32 G1_inst = skewSymmetric(kalman_gyro);
 	float32_t G2_mat[3][3] = {0};
 	arm_matrix_instance_f32 G2_inst;
 	arm_matrix_instance_f32 G3_inst = quatToMatrix(estimate);
@@ -185,7 +187,7 @@ void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t time_de
 	}
 	arm_mat_trans_f32(&F, &Ft);
 	arm_mat_mult_f32(&estimate_covar_mid, &Ft, &estimate_covariance);
-	arm_matrix_instance_f32 proc = process_covariance(time_delta);
+	arm_matrix_instance_f32 proc = process_covariance(time_delta); // why does this have to be called?
 	arm_mat_add_f32(&estimate_covariance, &proc, &estimate_covariance);
 
 

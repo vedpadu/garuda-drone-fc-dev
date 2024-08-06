@@ -1,4 +1,4 @@
 ../Core/Src/esc.c:28:6:updateESC	8	static
-../Core/Src/esc.c:103:16:getTims	4	static
-../Core/Src/esc.c:107:6:setMotorOutputs	24	static
-../Core/Src/esc.c:121:6:dshot600	40	static
+../Core/Src/esc.c:104:16:getTims	4	static
+../Core/Src/esc.c:108:6:setMotorOutputs	24	static
+../Core/Src/esc.c:122:6:dshot600	40	static
