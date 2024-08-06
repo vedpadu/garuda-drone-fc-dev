@@ -18,7 +18,7 @@ extern float32_t eulerAttitude[3];
 #define PID_KI  0.00
 #define PID_KD  0.02 //0.02
 
-#define PID_RATE_KP  0.0
+#define PID_RATE_KP  5.0
 #define PID_RATE_KI  0.0
 #define PID_RATE_KD  0.0
 

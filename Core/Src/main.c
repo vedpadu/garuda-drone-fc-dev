@@ -119,6 +119,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 			  lastKalmanTick = currTick;
 			  updateKalman(gyroPreFilt, accelPreFilt, deltTime);
 			  kalmanCtr++;
+			  motorMixerOuterUpdate(estimate);
 		}
 
 	  }else if(htim == &htim9){
