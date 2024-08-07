@@ -44,6 +44,7 @@ void updateESC(){
 	 if(!ready[masterCtr % 4]){
 
 		 dshot600(motorDshotBuffers[masterCtr % 4],motorOutputs[masterCtr % 4]);
+		 HAL_TIM_PWM_Start_DMA(motorPWMTims[masterCtr % 4].tim, motorPWMTims[masterCtr % 4].channel, motorDshotBuffers[masterCtr % 4], 18);
 		 if(armed){
 			 ready[masterCtr % 4] = 1;
 			 if(masterCtr % 4 == 3){
@@ -54,7 +55,6 @@ void updateESC(){
 			 }
 		 }
 	 }
-	 HAL_TIM_PWM_Start_DMA(motorPWMTims[masterCtr % 4].tim, motorPWMTims[masterCtr % 4].channel, motorDshotBuffers[masterCtr % 4], 18);
 	 if(masterCtr % 4 != 0){
 		 return;
 	 }

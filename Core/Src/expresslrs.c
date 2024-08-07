@@ -26,7 +26,7 @@ static uint8_t syncChannel = 0;
 static uint32_t freqSpread = 0;
 uint32_t seed = 0;
 uint32_t lastSync = 0;
-uint32_t lastPacketMicros;
+uint32_t lastPacketMicros = 0;
 
 // FHSS Configs for the SX1280
 // start and stop frequencies are magic numbers, I assume expressLRS
@@ -69,12 +69,10 @@ void setLastPacketTime(uint32_t timeMicros){
 void clockPhaseUpdate(uint32_t timeMicros){
 	if(receiver.connected != ELRS_DISCONNECTED){
 		//displayInt("rawDiff", phaseLocker.rawPhaseDiff);
-		/*if(tempTime - lastPacketMicros > 2000000){
+		if(getDeltaTime(phaseLocker.lastClockTimeMicros, phaseLocker.lastPacketTimeMicros) > 1000000){
 			disconnect(timeMicros);
-			char* test3 = "DC\n";
-			CDC_Transmit_FS((uint8_t *)test3, strlen(test3));
 			return;
-		}*/
+		}
 		 // will always be greater than packet time
 
 //		phaseLocker.rawPhaseDiff = (int32_t)getDeltaTime(phaseLocker.lastClockTimeMicros, phaseLocker.lastPacketTimeMicros);

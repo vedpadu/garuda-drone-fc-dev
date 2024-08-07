@@ -151,7 +151,6 @@ void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t time_de
 	addToQuat(&estimate, quatMultiplyScalar(quatMultiply(estimate, foldQuat), time_delta * 0.5));
 	normalizeQuaternion(&estimate); // slightly different values
 
-
 	// form process model
 	arm_matrix_instance_f32 G1_inst = skewSymmetric(kalman_gyro);
 	float32_t G2_mat[3][3] = {0};
@@ -195,7 +194,7 @@ void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t time_de
 	arm_mat_sub_f32(&H, &H, &H); // zero the matrix
 
 	quaternion_t inverseEst = quatInverse(estimate);
-	float32_t vec[3] = {0.0, 0.0, 1.0};
+	float32_t vec[3] = {0.0, 0.0, -1.0};
 	rotateVector3ByQuaternion(vec, inverseEst); // verify this is working
 	injectMatrix(H_mat[0], skewSymmetric(vec).pData, 0, 0, 15, 3, 1);
 	float32_t identityTemp[3][3] = {0}; // permanent 3x3 ident?

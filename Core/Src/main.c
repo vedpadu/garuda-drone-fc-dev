@@ -98,11 +98,11 @@ int gyroCtr = 0;
 float totalGyr = 0.0;
 int kalmanCtr = 0;
 
-void dispImuAndPID(float32_t* gyr, float32_t* acc, outRates_t pidRate, rateSetpoint_t desRate){
-	int len = snprintf(NULL, 0, "imu,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", gyr[0], gyr[1], gyr[2], acc[0], acc[1], acc[2], pidRate.roll, pidRate.pitch, pidRate.yaw, desRate.rateRoll, desRate.ratePitch, desRate.rateYaw);
+void dispImuAndPID(float32_t* gyr, float32_t* acc, outRates_t pidRate, uint16_t* mot){
+	int len = snprintf(NULL, 0, "imu,%f,%f,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d\n", gyr[0], gyr[1], gyr[2], acc[0], acc[1], acc[2], pidRate.roll, pidRate.pitch, pidRate.yaw, mot[0], mot[1], mot[2], mot[3]);
 	//int len2 = snprintf(NULL, 0, "%u", val2);
 	char *str = malloc(len + 2);
-	snprintf(str, len + 2, "imu,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", gyr[0], gyr[1], gyr[2], acc[0], acc[1], acc[2], pidRate.roll, pidRate.pitch, pidRate.yaw, desRate.rateRoll, desRate.ratePitch, desRate.rateYaw);
+	snprintf(str, len + 2, "imu,%f,%f,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d\n", gyr[0], gyr[1], gyr[2], acc[0], acc[1], acc[2], pidRate.roll, pidRate.pitch, pidRate.yaw, mot[0], mot[1], mot[2], mot[3]);
 	// do stuff with result
 	CDC_Transmit_FS((uint8_t*)str, strlen(str));
 	free(str);
@@ -117,9 +117,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 			float32_t currTick = micros();
 			  float32_t deltTime = (float32_t)(getDeltaTime(currTick, lastKalmanTick)) * 0.000001;
 			  lastKalmanTick = currTick;
-			  updateKalman(gyroPreFilt, accelPreFilt, deltTime);
+			  updateKalman(gyro, accel, deltTime);
 			  kalmanCtr++;
 			  motorMixerOuterUpdate(estimate);
+			 // dispEst(estimate);
+			  //dispImuAndPID(gyro, kalman_gyro, motorSetpoints, mot_buf);
 		}
 
 	  }else if(htim == &htim9){
@@ -129,15 +131,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 		  // Timer for radio
 	  }else if(htim == &htim10){
-		  motorCount++;
+
 		  if(bmiReady && initialized){
+			  motorCount++;
 			  /*float32_t currTick = micros();
 			  float32_t deltTime = (float32_t)(getDeltaTime(currTick, lastKalmanTick)) * 0.000001;
 			  lastKalmanTick = currTick;
 			  updateKalman(gyroPreFilt, accelPreFilt, deltTime);*/
 			  if(packetArrived){
-
 				  expressLrsSetRcDataFromPayload(rcData);
+
+
+
 
 
 				  motorMixerUpdate(rcData, mot_buf, gyro, accel, estimate);
@@ -166,7 +171,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 			  //dispImu(gyro, accel, deltTime);
 			  /**/
 
-			  //dispImuAndPID(gyro, gyroPreFilt, motorSetpoints, desiredRate);
+
 			  //updateKalman(gyro, accel, deltTime);
 			  //displayFloats4("imu", estimate.w, "01",  estimate.vec[0], "02",  estimate.vec[1], "03",  estimate.vec[2]);
 			 // displayFloats4("imu", desiredRate.rateRoll, "01",  desiredRate.ratePitch, "02",  desiredRate.rateYaw, "03",  estimate.vec[2]);
@@ -178,7 +183,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 
 			  //displayFloats4("gyro1", gyroTemp[0], "gyr2", gyroTemp[1],"gyr3", gyroTemp[2], "acc2", accelTemp[1]);
-			  //dispEst(estimate);
+
 
 			  //dispMatrixDebug(G_mat);
 		  }
@@ -189,8 +194,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 				//displayFloats4("00", estimate.w, "01", estimate.vec[0], "02", estimate.vec[1], "03", estimate.vec[2]);
 			  	uint32_t currTime = micros();
-			  	//displayFloats4("gyro1", gyroPreFilt[0], "gyr2", gyroPreFilt[1],"gyr3", gyroPreFilt[2], "acc2", accelPreFilt[1]);
-				displayInts4("gyro", countGyros, "motorUpdate", motorCount, "kalman", kalmanCtr, "delta", (getDeltaTime(currTime, lastTimePrint))/1000);
+			  	//dispImu(gyro, accel, 0.1);
+			  	//displayFloats4("r", motorSetpoints.roll, "p", motorSetpoints.pitch, "y", motorSetpoints.yaw, "t", motorSetpoints.throttle);
+			  	//displayFloats4("gyro", (float)countGyros, "motorUpdate", gyro[0], "kalman", gyroPreFilt[0], "delta", (float)(getDeltaTime(currTime, lastTimePrint))/1000);
+				//displayInts4("gyro", countGyros, "motorUpdate", motorCount, "kalman", kalmanCtr, "delta", (getDeltaTime(currTime, lastTimePrint))/1000);
 				lastTimePrint = currTime;
 				if(spiWorking){
 					HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
@@ -210,6 +217,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
   } else if (GPIO_Pin == GPIO_PIN_13) {
 	  // use dma?
+	  // switch to
 	  setLastPacketTime(micros());
 	  uint8_t clear_irq[3] = {0x97, 0xFF, 0xFF};
 	  HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_RESET);
@@ -307,9 +315,9 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim5); // esc // 4000 hz
   TIM10->DIER |= TIM_DIER_UIE;
   HAL_Delay(1);
-  HAL_TIM_Base_Start_IT(&htim10); // motor // trying to get 1000 hz // this clock only psc work?
+  HAL_TIM_Base_Start_IT(&htim11); // motor // trying to get 1000 hz // this clock only psc work?
   HAL_Delay(1);
-  HAL_TIM_Base_Start_IT(&htim11); // imu 100 hz
+  HAL_TIM_Base_Start_IT(&htim10); // imu 100 hz
 
 
   arm_mat_init_f32(&mat_A_instance, 15, 15, &matA[0][0]);

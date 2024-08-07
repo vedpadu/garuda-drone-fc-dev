@@ -8,6 +8,7 @@
 #include "imu.h"
 #include "main.h"
 #include "math.h"
+#include "expresslrs.h"
 
 //uint16_t motorOut[MOTOR_COUNT] = {INIT_THROTTLE_MIN, INIT_THROTTLE_MIN, INIT_THROTTLE_MIN, INIT_THROTTLE_MIN}; // values sent to motors -> between 0 and 2048
 rateSetpoint_t desiredRate = {0.0, 0.0, 0.0}; // roll, pitch, yaw
@@ -36,20 +37,20 @@ PIDController yawPID = {PID_KP, PID_KI, PID_KD,
 						SAMPLE_TIME_S };
 
 PIDController rollRatePID = {PID_RATE_KP, PID_RATE_KI, PID_RATE_KD,
-						PID_TAU,
+						PID_RATE_TAU,
 						PID_RATE_LIM_MIN, PID_RATE_LIM_MAX,
 						PID_RATE_LIM_MIN_INT, PID_RATE_LIM_MAX_INT,
-						SAMPLE_TIME_S };
+						SAMPLE_TIME_KALMAN };
 PIDController pitchRatePID = {PID_RATE_KP, PID_RATE_KI, PID_RATE_KD,
-						PID_TAU,
+						PID_RATE_TAU,
 						PID_RATE_LIM_MIN, PID_RATE_LIM_MAX,
 						PID_RATE_LIM_MIN_INT, PID_RATE_LIM_MAX_INT,
-						SAMPLE_TIME_S };
+						SAMPLE_TIME_KALMAN };
 PIDController yawRatePID = {PID_RATE_KP, PID_RATE_KI, PID_RATE_KD,
-						PID_TAU,
+						PID_RATE_TAU,
 						PID_RATE_LIM_MIN, PID_RATE_LIM_MAX,
 						PID_RATE_LIM_MIN_INT, PID_RATE_LIM_MAX_INT,
-						SAMPLE_TIME_S };
+						SAMPLE_TIME_KALMAN };
 
 void motorMixerInit(){
 	PIDController_Init(&rollPID);
@@ -62,11 +63,16 @@ void motorMixerInit(){
 
 void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRate, float32_t* currentAccel, quaternion_t attitude){
 	getRCInputs(rcData);
-	motorSetpoints.throttle = (float32_t)rcIn[2]/1000.0;
+	if(!isDisconnected()){
+		motorSetpoints.throttle = (float32_t)rcIn[2]/1000.0;
+	}else{
+		motorSetpoints.throttle = 0;
+	}
+
 	float32_t pitchRate = (float32_t)rcIn[1]/125.0;
 	float32_t rollRate = (float32_t)rcIn[0]/125.0;
-	//desiredRate.ratePitch = pitchRate;
-	//desiredRate.rateRoll = rollRate;
+	desiredRate.ratePitch = pitchRate;
+	desiredRate.rateRoll = rollRate;
 	if(motorSetpoints.throttle >= 0.01){
 		achieveDesiredRates(currentRate);
 	}else{
@@ -82,7 +88,11 @@ void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRa
 }
 
 void motorMixerOuterUpdate(quaternion_t attitude){
-	getDesiredRates(attitude);
+	float32_t pitchRate = (float32_t)rcIn[1]/500.0;
+	float32_t rollRate = (float32_t)rcIn[0]/500.0;
+	desiredAngle.pitch = pitchRate;
+	desiredAngle.roll = rollRate;
+	//getDesiredRates(attitude);
 }
 
 void getDesiredRatesAccel(float32_t* accel){
@@ -100,7 +110,7 @@ void getDesiredRatesAccel(float32_t* accel){
 void getDesiredRates(quaternion_t attitude){
 	quatToEuler(attitude, eulerAttitude);
 	// convert to roll pitch yaw
-	PIDController_Update(&rollRatePID, -desiredAngle.roll, -eulerAttitude[0]);
+	PIDController_Update(&rollRatePID, (desiredAngle.roll), eulerAttitude[0]);
 	PIDController_Update(&pitchRatePID, desiredAngle.pitch, eulerAttitude[1]);
 	PIDController_Update(&yawRatePID, desiredAngle.yaw, eulerAttitude[2]);
 
@@ -110,13 +120,29 @@ void getDesiredRates(quaternion_t attitude){
 }
 
 void achieveDesiredRates(float32_t* currentRate){
+	/*if(absVal(desiredRate.rateRoll - currentRate[0]) < 0.01){
+		currentRate[0] = desiredRate.rateRoll;
+	}
+	if(absVal(desiredRate.ratePitch - currentRate[1]) < 0.01){
+		currentRate[1] = desiredRate.ratePitch;
+	}
+	if(absVal(desiredRate.rateYaw - currentRate[2]) < 0.01){
+		currentRate[2] = desiredRate.rateYaw;
+	}*/
 	PIDController_Update(&rollPID, desiredRate.rateRoll, currentRate[0]);
 	PIDController_Update(&pitchPID, desiredRate.ratePitch, currentRate[1]);
 	PIDController_Update(&yawPID, desiredRate.rateYaw, currentRate[2]);
 
-	motorSetpoints.roll = clamp(rollPID.out, 1.0, -1.0); // don't have to clamp
-	motorSetpoints.pitch = clamp(pitchPID.out, 1.0, -1.0);
-	motorSetpoints.yaw = clamp(yawPID.out, 1.0, -1.0);
+	motorSetpoints.roll = rollPID.out;
+	motorSetpoints.pitch = pitchPID.out;
+	motorSetpoints.yaw = yawPID.out;
+}
+
+float32_t absVal(float32_t val){
+	if(val < 0){
+		return -val;
+	}
+	return val;
 }
 
 float32_t clamp(float32_t in, float32_t max, float32_t min){

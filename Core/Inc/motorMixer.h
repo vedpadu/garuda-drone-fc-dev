@@ -14,29 +14,31 @@
 
 extern float32_t eulerAttitude[3];
 
-#define PID_KP  0.028 // maybe raise this? //0.028
-#define PID_KI  0.00
-#define PID_KD  0.02 //0.02
+#define PID_KP  0.045 // maybe raise this? //0.028 // 0.05
+#define PID_KI  0.02 // 0.02
+#define PID_KD  0.14 //0.023 //0.15
 
-#define PID_RATE_KP  5.0
-#define PID_RATE_KI  0.0
-#define PID_RATE_KD  0.0
+#define PID_RATE_KP  7.0
+#define PID_RATE_KI  0.4
+#define PID_RATE_KD  -2.0
 
-#define PID_RATE_LIM_MIN -5.0
-#define PID_RATE_LIM_MAX  5.0
+#define PID_RATE_LIM_MIN -20.0
+#define PID_RATE_LIM_MAX  20.0
 
-#define PID_RATE_LIM_MIN_INT -3.0
-#define PID_RATE_LIM_MAX_INT  3.0
+#define PID_RATE_LIM_MIN_INT -1.0
+#define PID_RATE_LIM_MAX_INT  1.0
 
-#define PID_TAU 0.1 //0.1
+#define PID_TAU 0.1 //0.1 // too high?
+#define PID_RATE_TAU 0.075
 
 #define PID_LIM_MIN -1.0
 #define PID_LIM_MAX  1.0
 
-#define PID_LIM_MIN_INT -0.1
-#define PID_LIM_MAX_INT  0.1
+#define PID_LIM_MIN_INT -0.075
+#define PID_LIM_MAX_INT  0.075
 
-#define SAMPLE_TIME_S 0.002 // TODO: make this sample rate work pwease, im assuming a phase issue
+#define SAMPLE_TIME_S 0.002
+#define SAMPLE_TIME_KALMAN 0.01
 
 #define DEADBAND 20
 
@@ -78,5 +80,6 @@ float32_t clamp(float32_t in, float32_t max, float32_t min);
 void achieveDesiredRates(float32_t* currentRate);
 void getDesiredRates(quaternion_t attitude);
 void motorMixerOuterUpdate(quaternion_t attitude);
+float32_t absVal(float32_t val);
 
 #endif /* INC_MOTORMIXER_H_ */

@@ -1,13 +1,14 @@
 #include "imu.h"
 
-float32_t gyro[3];
-float32_t accel[3];
-float32_t gyroPreFilt[3];
-float32_t accelPreFilt[3];
+float32_t gyro[3] = {0};
+float32_t accel[3] = {0};
+float32_t gyroPreFilt[3] = {0};
+float32_t accelPreFilt[3] = {0};
 BiquadLPF gyroBiquad;
 BiquadLPF accelBiquad;
 
-float32_t gyroB[3] = {(float32_t)-0.001, (float32_t)-0.002, (float32_t)-0.00106};
+//float32_t gyroB[3] = {(float32_t)-0.001, (float32_t)-0.002, (float32_t)-0.00106}; -> drone 1
+float32_t gyroB[3] = {(float32_t)-0.0013, (float32_t)-0.0035, (float32_t)-0.0019};
 float32_t accelB[3] = {(float32_t)0.295/9.8, (float32_t)-0.032/9.8, (float32_t)0.013/9.8};
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi){
@@ -33,13 +34,21 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi){
 		gyroPreFilt[2] = (float32_t)lsb_to_dps(gyroZSigned, (float)2000.0, 16) * M_PI / 180.0;
 		biquadLPFApply(&gyroBiquad, gyroPreFilt, gyro);
 		biquadLPFApply(&accelBiquad, accelPreFilt, accel);
+		/*gyro[0] = -(gyro[0] - gyroB[0]);
+		gyro[1] = -(gyro[1] - gyroB[1]);
+		gyro[2] = (gyro[2] - gyroB[2]);
+
+		accel[0] = accel[0] - accelB[0];
+		accel[1] = (accel[1] - accelB[1]);
+		accel[2] = -(accel[2] - accelB[2]);*/
 		gyro[0] = -(gyro[0] - gyroB[0]);
 		gyro[1] = gyro[1] - gyroB[1];
 		gyro[2] = -(gyro[2] - gyroB[2]);
 
-		accel[0] = accel[0] - accelB[0];
-		accel[1] = -(accel[1] - accelB[1]);
-		accel[2] = accel[2] - accelB[2];
+		accel[0] = -(accel[0] - accelB[0]);
+		accel[1] = (accel[1] - accelB[1]);
+		accel[2] = -(accel[2] - accelB[2]);
+
 		countGyros+=1;
 	}
 
