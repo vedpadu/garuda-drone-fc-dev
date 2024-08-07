@@ -71,8 +71,8 @@ void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRa
 
 	float32_t pitchRate = (float32_t)rcIn[1]/125.0;
 	float32_t rollRate = (float32_t)rcIn[0]/125.0;
-	desiredRate.ratePitch = pitchRate;
-	desiredRate.rateRoll = rollRate;
+	//desiredRate.ratePitch = pitchRate;
+	//desiredRate.rateRoll = rollRate;
 	if(motorSetpoints.throttle >= 0.01){
 		achieveDesiredRates(currentRate);
 	}else{
@@ -92,7 +92,7 @@ void motorMixerOuterUpdate(quaternion_t attitude){
 	float32_t rollRate = (float32_t)rcIn[0]/500.0;
 	desiredAngle.pitch = pitchRate;
 	desiredAngle.roll = rollRate;
-	//getDesiredRates(attitude);
+	getDesiredRates(attitude);
 }
 
 void getDesiredRatesAccel(float32_t* accel){
