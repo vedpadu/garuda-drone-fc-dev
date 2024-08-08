@@ -87,7 +87,6 @@ uint16_t mot_buf[4] = {0};
 uint8_t doBlink = 0;
 
 int16_t oldRCVal = 48;
-int startTick = 0;
 uint32_t lastKalmanTick = 0;
 
 uint32_t lastTimePrint = 0;
@@ -119,7 +118,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 			  lastKalmanTick = currTick;
 			  updateKalman(gyro, accel, deltTime);
 			  kalmanCtr++;
-			  motorMixerOuterUpdate(estimate);
+			  motorMixerOuterUpdate(estimate, accel);
+//			  float32_t vec[3] = {0.0, 0.0, -1.0};
+//			  quaternion_t inverseEst = quatInverse(estimate);
+//				rotateVector3ByQuaternion(vec, inverseEst); // verify this is working
+//				float32_t dot = vec[0] * accel[0] + vec[1] * accel[1] + vec[2] * accel[2];
+				//displayFloats4("dot,", outThrott, "accel1", velEst, "accel1", accel[1], "accel2", accel[2]);
 			  //dispImu(gyro, accel, deltTime);
 			 // dispEst(estimate);
 			  //dispImuAndPID(gyro, kalman_gyro, motorSetpoints, mot_buf);
@@ -159,34 +163,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 		  //handleConnectionState(micros());
 	  }else if(htim == &htim11){
 		  if(bmiReady && initialized){
-
 			  readIMUData();
-
 			  gyroCtr++;
-
-			  //countMotor++;
-			 // displayFloats4("00", gyro[0], "01", gyro[1], "02", gyro[2], "03", accel[0]);
-			  //float32_t temp[3] = {0.0, 0.0,0.0};
-			  // TODO: do IN IMU
-
-			  //dispImu(gyro, accel, deltTime);
-			  /**/
-
-
-			  //updateKalman(gyro, accel, deltTime);
-			  //displayFloats4("imu", estimate.w, "01",  estimate.vec[0], "02",  estimate.vec[1], "03",  estimate.vec[2]);
-			 // displayFloats4("imu", desiredRate.rateRoll, "01",  desiredRate.ratePitch, "02",  desiredRate.rateYaw, "03",  estimate.vec[2]);
-				 // updateKalman(gyro, accel, deltTime);
-
-
-
-			  //dispMatrixDebug(estimate_covar_mat);
-
-
-			  //displayFloats4("gyro1", gyroTemp[0], "gyr2", gyroTemp[1],"gyr3", gyroTemp[2], "acc2", accelTemp[1]);
-
-
-			  //dispMatrixDebug(G_mat);
 		  }
 
 	  }else if(htim == &htim3){
@@ -195,6 +173,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 				//displayFloats4("00", estimate.w, "01", estimate.vec[0], "02", estimate.vec[1], "03", estimate.vec[2]);
 			  	uint32_t currTime = micros();
+//			  	float32_t vec[3] = {0.0, 0.0, -1.0};
+//				quaternion_t inverseEst = quatInverse(estimate);
+//				rotateVector3ByQuaternion(vec, inverseEst); // verify this is working
+//				float32_t dot = vec[0] * accel[0] + vec[1] * accel[1] + vec[2] * accel[2];
+				//displayFloats4("dot", dot, "accel1", accel[0], "accel1", accel[1], "accel2", accel[2]);
 			  	//dispImu(gyro, accel, 0.1);
 			  	//displayFloats4("r", motorSetpoints.roll, "p", motorSetpoints.pitch, "y", motorSetpoints.yaw, "t", motorSetpoints.throttle);
 			  	//displayFloats4("gyro", (float)countGyros, "motorUpdate", gyro[0], "kalman", gyroPreFilt[0], "delta", (float)(getDeltaTime(currTime, lastTimePrint))/1000);
@@ -203,7 +186,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 				if(spiWorking){
 					HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
 				}
-				//uint8_t busy = (uint8_t)HAL_GPIO_ReadPin(RX_SPI_BUSY_GPIO_Port, RX_SPI_BUSY_Pin);
 
 				HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
 		  }
@@ -213,12 +195,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-  if(GPIO_Pin == GPIO_PIN_6) {
-	  // convert to a timer so that we can leave the process covariance a constant?
-
-  } else if (GPIO_Pin == GPIO_PIN_13) {
+   if (GPIO_Pin == GPIO_PIN_13) {
 	  // use dma?
-	  // switch to
+	  // switch to a function in the class
 	  setLastPacketTime(micros());
 	  uint8_t clear_irq[3] = {0x97, 0xFF, 0xFF};
 	  HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_RESET);
@@ -242,6 +221,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	  packetArrived = 1;
 
   } else if(GPIO_Pin == GPIO_PIN_2){
+	  // add erase flash sector functionality on multiple presses as well as clearing bind mode
 	  char* data4 = "BIND\n";
 	  CDC_Transmit_FS((uint8_t *)data4, strlen(data4));
 	  setBindingMode();
@@ -261,22 +241,6 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	float32_t matA[15][15] = {{0.0, 0.0},
-							{0.0, 0.0}};
-	float32_t matB[15][15] = {{0.0, 0.0},
-							{0.0, 0.0}};
-
-	float32_t matC[3][3] = {0};
-	//identity(matC[0], 3);
-
-	float32_t matD[2][2] = {{1.0, 3.0},{2.0, 0.0}};
-	//injectMatrix(matC[0], matD[0], 0, 0, 3, 2);
-
-	float32_t mat_AB[15][15];
-	arm_matrix_instance_f32 mat_A_instance;
-	arm_matrix_instance_f32 mat_B_instance;
-	arm_matrix_instance_f32 mat_AB_instance;
-	arm_matrix_instance_f32 mat_C_instance;
 
   /* USER CODE END 1 */
 
@@ -311,106 +275,23 @@ int main(void)
   MX_TIM11_Init();
   /* USER CODE BEGIN 2 */
   uint32_t startingTick = HAL_GetTick();
-  HAL_TIM_Base_Start_IT(&htim3);
-  HAL_TIM_Base_Start_IT(&htim9); // clock phase // 250 hz atm
+  HAL_TIM_Base_Start_IT(&htim3); // debug loop and LEDs
+  HAL_TIM_Base_Start_IT(&htim9); // clock express lrs phase // 250 hz atm
   HAL_TIM_Base_Start_IT(&htim5); // esc // 4000 hz
-  TIM10->DIER |= TIM_DIER_UIE;
-  HAL_Delay(1);
+  HAL_Delay(1); // Delays are to make sure the timers are not in phase.
   HAL_TIM_Base_Start_IT(&htim11); // motor // trying to get 1000 hz // this clock only psc work?
   HAL_Delay(1);
   HAL_TIM_Base_Start_IT(&htim10); // imu 100 hz
 
-
-  arm_mat_init_f32(&mat_A_instance, 15, 15, &matA[0][0]);
-  arm_mat_init_f32(&mat_B_instance, 15, 15, &matB[0][0]);
-  arm_mat_init_f32(&mat_AB_instance, 15, 15, &mat_AB[0][0]);
-
-  float32_t vectorSym[3] = {0.5, 0.6, 0.7};
-  //arm_mat_sub_f32(&mat_C_instance, &mat_C_instance, &mat_C_instance);
-
-  uint32_t tickB4 = HAL_GetTick();
-  arm_matrix_instance_f32 proc_cov = process_covariance(0.1);
-  uint32_t tickAfter = HAL_GetTick();
-
-  quaternion_t q1 = {0.6, {0.5, 0.6, 0.7}};
-  quaternion_t q2 = {0.7, {0.4, 0.3, 0.2}};
-  quaternion_t q3 = quatMultiply(q1, q2);
-
-  matA[0][0] = 2.0;
-  matA[0][1] = 4.0;
-  matA[1][0] = 1.0;
-  matA[1][1] = 4.0;
-
-  matB[0][0] = 3.0;
-  matB[0][1] = 2.0;
-  matB[1][0] = 3.0;
-  matB[1][1] = 4.0;
-
-
-  //arm_mat_mult_f32(&mat_A_instance, &mat_B_instance, &mat_AB_instance);
-  //arm_mat_scale_f32(&mat_A_instance, 2.5, &mat_A_instance);
-
-
-  // tim 2 channel 1 only
-
-  // circular mode notes
-  /*__HAL_RCC_TIM2_CLK_ENABLE();
-  TIM2->PSC = (uint16_t)3;
-  TIM2->ARR = (uint32_t)19;
-  TIM2->CCMR1 = TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1PE;
-  //TIM2->CCMR1 |= TIM_CCMR1_OC1PE;
-
-  TIM2->CCER = TIM_CCER_CC1E;
-
-  TIM2->DIER = TIM_DIER_CC1DE;
-
-  TIM2->CR1 = TIM_CR1_ARPE;
-
-  //TIM2->CCER |
-
-  __HAL_RCC_DMA1_CLK_ENABLE();
-
-
-  // dma 1 stream 5
-  DMA1_Stream5->CR = DMA_SxCR_MSIZE_1 | DMA_SxCR_PSIZE_1 | DMA_SxCR_MINC | DMA_SxCR_CIRC| DMA_SxCR_DIR_0 | DMA_CHANNEL_3 | DMA_SxCR_PL_1;
-
-
-  //DMA1_Stream5->CMAR = (uint32_t)motorDMABuf;
-  //DMA1_Channel5->CNDTR = (uint16_t)18;
-  DMA1_Stream5->M0AR = (uint32_t)motorDMABuf;
-  DMA1_Stream5->NDTR |= (uint32_t)18;
-  DMA1_Stream5->PAR = (uint32_t)(&TIM2->CCR1);
-
-  //dshot600(motorDMABuf, 48);
-
-  //DMA1_Stream5->CR |= DMA_IT_TC | DMA_IT_TE | DMA_IT_DME;
-
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-  GPIO_InitStruct.Pin = GPIO_PIN_0;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF1_TIM2;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-  //DMA1_Stream5->PAR = (uint32_t)(&TIM2->CCR1);*/
-
-  //HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_1, motorDMABuf, 18);
-
-
-  startTick = HAL_GetTick();
-  int freed = 0;
-
+  // initialize peripherals
   initExpressLRS();
   IMUInit();
   motorMixerInit();
   quaternion_t initEst = {1.0, {0.0, 0.0, 0.0}};
   lastKalmanTick = micros();
   initKalman(initEst, 0.0, 0.004 , 0.000005, 0.005, 0.0, 0.01);
-  //mat_C_instance = quatToMatrix(q1);
 
-  // clock micros init
+  // start the microsecond clock
   CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
   DWT->CTRL |= 1;
   DWT->CYCCNT = 0;
@@ -418,33 +299,8 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  // all just debug here, can be cleaned. Tomorrow write gyro class, so that switching up the gyro can be relatively easy.
   while (1)
   {
-	uint32_t currentTick = HAL_GetTick();
-
-	if(currentTick - last_tick_start > 1000)
-	{
-
-//		displayInts4("rc0", rcData[0], "rc1", rcData[1], "rc2", rcData[2], "rc3", rcData[3]);
-//
-//		//displayFloats4("00", estimate.w, "01", estimate.vec[0], "02", estimate.vec[1], "03", estimate.vec[2]);
-//		displayInts3("gyro", countGyros, "clock", countMotor, "delta", (getDeltaTime(micros(), lastTimePrint))/1000);
-//		lastTimePrint = micros();
-//		if(spiWorking){
-//			HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
-//		}
-//		if(currentTick - startTick > 6000 && !freed){
-//			//initialized = 1;
-//			//lastKalmanTick = micros();
-//			free(mat_C_instance.pData);
-//			freed = 1;
-//		}
-//		//uint8_t busy = (uint8_t)HAL_GPIO_ReadPin(RX_SPI_BUSY_GPIO_Port, RX_SPI_BUSY_Pin);
-//
-//		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
-//		last_tick_start = currentTick;
-	}
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

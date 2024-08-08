@@ -142,7 +142,12 @@ arm_matrix_instance_f32 process_covariance(float32_t time_delta){
 
 void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t time_delta){
 	//subtractFromVector(gyroMeas, gyro_bias, 3);
-	subtractFromVector(accMeas, accelerometer_bias, 3);
+	//subtractFromVector(accMeas, accelerometer_bias, 3);
+
+	subtractFromVector(kalman_accel, kalman_accel, 3);
+	addToVector(kalman_accel, accMeas, 3);
+	subtractFromVector(kalman_accel, accelerometer_bias, 3);
+	// TODO: this gyro bias should be public hypothetically
 	subtractFromVector(kalman_gyro, kalman_gyro, 3);
 	addToVector(kalman_gyro, gyroMeas, 3);
 	subtractFromVector(kalman_gyro, gyro_bias, 3);
@@ -160,7 +165,7 @@ void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t time_de
 
 	arm_mat_scale_f32(&G1_inst, -1.0, &G1_inst);
 	arm_mat_scale_f32(&G3_inst, -1.0, &G3_inst);
-	arm_matrix_instance_f32 G2_temp = skewSymmetric(accMeas);
+	arm_matrix_instance_f32 G2_temp = skewSymmetric(kalman_accel);
 	arm_mat_mult_f32(&G3_inst, &G2_temp, &G2_inst);
 	//displayFloats4("00", gyroMeas[0], "01", gyroMeas[1], "02", gyroMeas[2], "03", G1_inst.pData[3]);
 
@@ -203,7 +208,7 @@ void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t time_de
 	arm_mat_trans_f32(&H, &Ht);
 	arm_mat_mult_f32(&estimate_covariance, &Ht, &PHt);
 	arm_mat_mult_f32(&H, &PHt, &inn_cov);
-	arm_matrix_instance_f32 curr_obs_cov = createScaleMatrix(&observation_covariance, getAccelHealth(accMeas, kalman_gyro), 3);
+	arm_matrix_instance_f32 curr_obs_cov = createScaleMatrix(&observation_covariance, getAccelHealth(kalman_accel, kalman_gyro), 3);
 	arm_mat_add_f32(&inn_cov, &curr_obs_cov, &inn_cov);
 	arm_mat_inverse_f32(&inn_cov, &inverse_in_cov);
 	arm_mat_mult_f32(&PHt, &inverse_in_cov, &K);
@@ -215,9 +220,9 @@ void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t time_de
 	arm_mat_mult_f32(&estimate_covar_mid, &estimate_covariance, &estimate_covar_copy);
 	arm_mat_add_f32(&estimate_covar_copy, &zero_inst, &estimate_covariance); // copying the matrix kind of scuffed
 
-	subtractFromVector(accMeas, vec, 3);
+	subtractFromVector(kalman_accel, vec, 3);
 	arm_matrix_instance_f32 accMeasInst;
-	arm_mat_init_f32(&accMeasInst, 3, 1, accMeas);
+	arm_mat_init_f32(&accMeasInst, 3, 1, kalman_accel);
 	arm_mat_mult_f32(&K, &accMeasInst, &aposteriori_state);
 
 	quaternion_t apost_fold_quat = {1.0, {0.5 * aposteriori_mat[0][0], 0.5 * aposteriori_mat[1][0], 0.5 * aposteriori_mat[2][0]}};
