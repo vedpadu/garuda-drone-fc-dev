@@ -203,9 +203,11 @@ void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t time_de
 	arm_mat_trans_f32(&H, &Ht);
 	arm_mat_mult_f32(&estimate_covariance, &Ht, &PHt);
 	arm_mat_mult_f32(&H, &PHt, &inn_cov);
-	arm_mat_add_f32(&inn_cov, &observation_covariance, &inn_cov);
+	arm_matrix_instance_f32 curr_obs_cov = createScaleMatrix(&observation_covariance, getAccelHealth(accMeas, kalman_gyro), 3);
+	arm_mat_add_f32(&inn_cov, &curr_obs_cov, &inn_cov);
 	arm_mat_inverse_f32(&inn_cov, &inverse_in_cov);
 	arm_mat_mult_f32(&PHt, &inverse_in_cov, &K);
+	free(curr_obs_cov.pData);
 
 	// update with a posteriori covariance
 	arm_mat_mult_f32(&K, &H, &estimate_covar_mid);
@@ -225,6 +227,15 @@ void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t time_de
 	float32_t addToAccelBias[3] = {aposteriori_mat[12][0], aposteriori_mat[13][0], aposteriori_mat[14][0]};
 	addToVector(gyro_bias, addToGyroBias, 3);
 	addToVector(accelerometer_bias, addToAccelBias, 3);
+}
+
+float32_t getAccelHealth(float32_t* acc, float32_t* gyr){
+	float32_t mag = acc[0] * acc[0] + acc[1] * acc[1] + acc[2] * acc[2];
+	float32_t diff = mag - 1.0;
+	if(diff < 0){
+		diff = -diff;
+	}
+	return 1.0 + (diff * 15.0);
 }
 
 // has to be freed

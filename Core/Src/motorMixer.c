@@ -90,9 +90,17 @@ void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRa
 void motorMixerOuterUpdate(quaternion_t attitude){
 	float32_t pitchRate = (float32_t)rcIn[1]/500.0;
 	float32_t rollRate = (float32_t)rcIn[0]/500.0;
+	float32_t yawRate = (float32_t)rcIn[3]/1000.0;
 	desiredAngle.pitch = pitchRate;
 	desiredAngle.roll = rollRate;
-	getDesiredRates(attitude);
+	quatToEuler(attitude, eulerAttitude);
+	if(motorSetpoints.throttle < 0.01){
+		desiredAngle.yaw = eulerAttitude[2];
+	}else{
+		desiredAngle.yaw += yawRate / 100.0;
+	}
+
+	getDesiredRates(eulerAttitude);
 }
 
 void getDesiredRatesAccel(float32_t* accel){
@@ -107,16 +115,16 @@ void getDesiredRatesAccel(float32_t* accel){
 	//desiredRate.rateYaw = yawRatePID.out;
 }
 
-void getDesiredRates(quaternion_t attitude){
-	quatToEuler(attitude, eulerAttitude);
+void getDesiredRates(float32_t* eulerAtt){
+
 	// convert to roll pitch yaw
-	PIDController_Update(&rollRatePID, (desiredAngle.roll), eulerAttitude[0]);
-	PIDController_Update(&pitchRatePID, desiredAngle.pitch, eulerAttitude[1]);
-	PIDController_Update(&yawRatePID, desiredAngle.yaw, eulerAttitude[2]);
+	PIDController_Update(&rollRatePID, (desiredAngle.roll), eulerAtt[0]);
+	PIDController_Update(&pitchRatePID, desiredAngle.pitch, eulerAtt[1]);
+	PIDController_Update(&yawRatePID, desiredAngle.yaw, eulerAtt[2]);
 
 	desiredRate.rateRoll = rollRatePID.out;
 	desiredRate.ratePitch = pitchRatePID.out;
-	//desiredRate.rateYaw = yawRatePID.out;
+	desiredRate.rateYaw = yawRatePID.out;
 }
 
 void achieveDesiredRates(float32_t* currentRate){

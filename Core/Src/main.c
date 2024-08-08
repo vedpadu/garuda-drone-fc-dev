@@ -120,6 +120,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 			  updateKalman(gyro, accel, deltTime);
 			  kalmanCtr++;
 			  motorMixerOuterUpdate(estimate);
+			  //dispImu(gyro, accel, deltTime);
 			 // dispEst(estimate);
 			  //dispImuAndPID(gyro, kalman_gyro, motorSetpoints, mot_buf);
 		}
@@ -406,7 +407,7 @@ int main(void)
   motorMixerInit();
   quaternion_t initEst = {1.0, {0.0, 0.0, 0.0}};
   lastKalmanTick = micros();
-  initKalman(initEst, 0.0, 0.005 , 0.0000005, 0.1, 0.0, 0.01);
+  initKalman(initEst, 0.0, 0.004 , 0.000005, 0.005, 0.0, 0.01);
   //mat_C_instance = quatToMatrix(q1);
 
   // clock micros init

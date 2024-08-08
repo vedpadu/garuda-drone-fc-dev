@@ -39,6 +39,7 @@ arm_matrix_instance_f32 createScaleMatrix(arm_matrix_instance_f32* instanceIn, f
 arm_matrix_instance_f32 process_covariance(float32_t time_delta);
 void subtractFromVector(float32_t* vec1, float32_t* vec2, uint8_t size);
 void addToVector(float32_t* vec1, float32_t* vec2, uint8_t len);
+float32_t getAccelHealth(float32_t* acc, float32_t* gyr);
 
 float32_t vectorDot(float32_t* vec1, float32_t* vec2, uint8_t len);
 float32_t* vector3Add(float32_t* vec1, float32_t* vec2, float32_t* out);
