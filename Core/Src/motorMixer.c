@@ -84,7 +84,7 @@ void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRa
 	throttleTarget = (float32_t)rcIn[2]/500.0;
 
 	if(!isDisconnected() && throttleTarget > 0){
-		//motorSetpoints.throttle = throttleTarget;
+		// hovering area... hypothetically -> might be making stuff worse
 		if(absVal(throttleTarget - 1.0) < 0.15){
 			throttleTarget = 1.0;
 		}
@@ -109,6 +109,7 @@ void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRa
 		achieveDesiredRates(currentRate);
 
 	}else{
+		// zero everything on no throttle
 		motorSetpoints.roll = 0;
 		motorSetpoints.pitch = 0;
 		motorSetpoints.yaw = 0;
@@ -116,9 +117,6 @@ void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRa
 		lastHoverableThrott = 0.0;
 	}
 
-	//motorSetpoints.pitch = (float32_t)rcIn[1]/1000.0;
-	//motorSetpoints.roll = (float32_t)rcIn[0]/1000.0;
-	//motorSetpoints.yaw = (float32_t)rcIn[3]/1000.0;
 	getMotorOutputs(motorSetpoints, motorOut);
 }
 
@@ -153,13 +151,12 @@ void getDesiredThrottle(float32_t dotTarget, quaternion_t attitude, float32_t* a
 		thrustScale = 1.0/vec2[2];
 	}
 
-
-
+	// TODO: tune this ctrlr
 	PIDController_Update(&throttlePID, dotTarget, dot);
 	outThrott = throttlePID.out;
 
 	if(hoverThrottle > 0){
-
+		// only can help alt hold, not perfect as throttle not linearized and stuff
 		motorSetpoints.throttle = dotTarget * hoverThrottle * thrustScale + throttlePID.out;
 	}else{
 		motorSetpoints.throttle = dotTarget * 0.5;
@@ -169,8 +166,6 @@ void getDesiredThrottle(float32_t dotTarget, quaternion_t attitude, float32_t* a
 }
 
 void getDesiredRates(float32_t* eulerAtt){
-
-	// convert to roll pitch yaw
 	PIDController_Update(&rollRatePID, (desiredAngle.roll), eulerAtt[0]);
 	PIDController_Update(&pitchRatePID, desiredAngle.pitch, eulerAtt[1]);
 	PIDController_Update(&yawRatePID, desiredAngle.yaw, eulerAtt[2]);
@@ -181,15 +176,6 @@ void getDesiredRates(float32_t* eulerAtt){
 }
 
 void achieveDesiredRates(float32_t* currentRate){
-	/*if(absVal(desiredRate.rateRoll - currentRate[0]) < 0.01){
-		currentRate[0] = desiredRate.rateRoll;
-	}
-	if(absVal(desiredRate.ratePitch - currentRate[1]) < 0.01){
-		currentRate[1] = desiredRate.ratePitch;
-	}
-	if(absVal(desiredRate.rateYaw - currentRate[2]) < 0.01){
-		currentRate[2] = desiredRate.rateYaw;
-	}*/
 	PIDController_Update(&rollPID, desiredRate.rateRoll, currentRate[0]);
 	PIDController_Update(&pitchPID, desiredRate.ratePitch, currentRate[1]);
 	PIDController_Update(&yawPID, desiredRate.rateYaw, currentRate[2]);

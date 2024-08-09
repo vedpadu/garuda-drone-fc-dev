@@ -1,136 +1,112 @@
 /*
  * esc.c
- * Creates DSHOT600 packets given motor values
+ * Arms ESC as well as creates DSHOT600 packets given motor values
  *
  *  Created on: Jul 24, 2024
- *      Author: vedpa
+ *      Author: vedpadu
  */
 #include "esc.h"
-#include "main.h"
 
 uint8_t armed = 0;
-uint16_t initializationCtr = 0;
-uint16_t masterCtr = 0;
+uint16_t initialization_ctr = 0;
+uint16_t arming_ctr = 0;
 uint8_t do_init_throttle_down = 0;
-uint32_t motorDshotBuffers[MOTOR_COUNT][DSHOT_FRAME_SIZE] = {{0}};
-uint16_t motorOutputs[MOTOR_COUNT] = {INIT_THROTTLE_MIN, INIT_THROTTLE_MIN, INIT_THROTTLE_MIN, INIT_THROTTLE_MIN};
+uint32_t motor_dshot_buffers[MOTOR_COUNT][DSHOT_FRAME_SIZE] = { { 0 } };
+uint16_t motor_outputs[MOTOR_COUNT] = { INIT_THROTTLE_MIN, INIT_THROTTLE_MIN, INIT_THROTTLE_MIN, INIT_THROTTLE_MIN };
 motorPWMTim_t motorPWMTims[4] = {
-		{0, &htim4, TIM_CHANNEL_2, &hdma_tim4_ch2}, // black red // + pitch + roll
-		{1, &htim2, TIM_CHANNEL_3, &hdma_tim2_ch3_up}, // black black // - pitch + roll
-		{2, &htim4, TIM_CHANNEL_3, &hdma_tim4_ch3}, // red red // - pitch - roll
-		{3, &htim2, TIM_CHANNEL_1, &hdma_tim2_ch1}, // red black // + pitch - roll
-};
-
-uint8_t ready[4] = {0};
-
+		{ 0, &htim4, TIM_CHANNEL_2, &hdma_tim4_ch2 }, // black red // + pitch + roll
+		{ 1, &htim2, TIM_CHANNEL_3, &hdma_tim2_ch3_up }, // black black // - pitch + roll
+		{ 2, &htim4, TIM_CHANNEL_3, &hdma_tim4_ch3 }, // red red // - pitch - roll
+		{ 3, &htim2, TIM_CHANNEL_1, &hdma_tim2_ch1 }, // red black // + pitch - roll
+		};
 
 // deals with the initialization as well as the motor setting
-void updateESC(){
-	masterCtr++;
+void armESC() {
+	arming_ctr++;
 	// wait power up
-	if(masterCtr % 4 == 0){
-		if (initializationCtr < ESC_POWER_UP_TIME) {
-		  ++initializationCtr;
-		  return;
-	  }
+	if (arming_ctr % MOTOR_COUNT == 0) {
+		if (initialization_ctr < ESC_POWER_UP_TIME) {
+			++initialization_ctr;
+			return;
+		}
 	}
 
-	if (initializationCtr < ESC_POWER_UP_TIME) {
+	if (initialization_ctr < ESC_POWER_UP_TIME) {
 		return;
 	}
 
+	if (!armed) {
+		dshot600(motor_dshot_buffers[arming_ctr % MOTOR_COUNT],
+				motor_outputs[arming_ctr % MOTOR_COUNT]);
+		HAL_TIM_PWM_Start_DMA(motorPWMTims[arming_ctr % MOTOR_COUNT].tim,
+				motorPWMTims[arming_ctr % MOTOR_COUNT].channel,
+				motor_dshot_buffers[arming_ctr % MOTOR_COUNT], 18);
+	}
+	if (!armed && initialization_ctr > ESC_POWER_UP_TIME + INIT_THROTTLE_MAX * 6 && arming_ctr % MOTOR_COUNT == MOTOR_COUNT - 1) {
+		armed = 1;
+		// convert to 100 hz low prio kalman timer. TODO: make unconstant
+		HAL_NVIC_SetPriority(TIM5_IRQn, 5, 0);
+		htim5.Instance->PSC = 4799;
+		htim5.Instance->ARR = 99;
+	}
+	if (armed || arming_ctr % MOTOR_COUNT != 0) {
+		return;
+	}
 
+	++initialization_ctr;
 
-	 if(!ready[masterCtr % 4]){
+	// TODO: for loop
+	if (do_init_throttle_down) {
+		motor_outputs[0]--;
+		motor_outputs[1]--;
+		motor_outputs[2]--;
+		motor_outputs[3]--;
+		if (motor_outputs[0] < INIT_THROTTLE_MIN) {
+			motor_outputs[0] = INIT_THROTTLE_MIN;
+			motor_outputs[1] = INIT_THROTTLE_MIN;
+			motor_outputs[2] = INIT_THROTTLE_MIN;
+			motor_outputs[3] = INIT_THROTTLE_MIN;
+		}
 
-		 dshot600(motorDshotBuffers[masterCtr % 4],motorOutputs[masterCtr % 4]);
-		 HAL_TIM_PWM_Start_DMA(motorPWMTims[masterCtr % 4].tim, motorPWMTims[masterCtr % 4].channel, motorDshotBuffers[masterCtr % 4], 18);
-		 if(armed){
-			 ready[masterCtr % 4] = 1;
-			 if(masterCtr % 4 == 3){
-				 HAL_NVIC_SetPriority(TIM5_IRQn, 5, 0);
-				 htim5.Instance->PSC = 4799;
-				 htim5.Instance->ARR = 99;
-				 //HAL_TIM_Base_Stop_IT(&htim5);
-			 }
-		 }
-	 }
-	 if(masterCtr % 4 != 0){
-		 return;
-	 }
-
-	 if(armed){
-		 return;
-	 }
-
-	 if (!armed && initializationCtr > ESC_POWER_UP_TIME+INIT_THROTTLE_MAX*6){
-		 armed = 1;
-		// HAL_TIM_Base_Stop_IT(&htim5);
-		 //htim5.Instance->PSC = 4799;
-		 //htim5.Instance->ARR = 25;
-	 }
-
-	  ++initializationCtr;
-
-	  if (do_init_throttle_down) {
-		 motorOutputs[0]--;
-		 motorOutputs[1]--;
-		 motorOutputs[2]--;
-		 motorOutputs[3]--;
-		 if (motorOutputs[0]<INIT_THROTTLE_MIN){
-			 motorOutputs[0]=INIT_THROTTLE_MIN;
-			 motorOutputs[1]=INIT_THROTTLE_MIN;
-			 motorOutputs[2]=INIT_THROTTLE_MIN;
-			 motorOutputs[3]=INIT_THROTTLE_MIN;
-		 }
-
-	 }
-	 else {
-		 motorOutputs[0]++;
-		 motorOutputs[1]++;
-		 motorOutputs[2]++;
-		 motorOutputs[3]++;
-		 if (motorOutputs[0] > INIT_THROTTLE_MAX) {
-			 motorOutputs[0] = INIT_THROTTLE_MAX;
-			 motorOutputs[1] = INIT_THROTTLE_MAX;
-			 motorOutputs[2] = INIT_THROTTLE_MAX;
-			 motorOutputs[3] = INIT_THROTTLE_MAX;
-			 do_init_throttle_down = 1;
-		 }
-	 }
+	} else {
+		motor_outputs[0]++;
+		motor_outputs[1]++;
+		motor_outputs[2]++;
+		motor_outputs[3]++;
+		if (motor_outputs[0] > INIT_THROTTLE_MAX) {
+			motor_outputs[0] = INIT_THROTTLE_MAX;
+			motor_outputs[1] = INIT_THROTTLE_MAX;
+			motor_outputs[2] = INIT_THROTTLE_MAX;
+			motor_outputs[3] = INIT_THROTTLE_MAX;
+			do_init_throttle_down = 1;
+		}
+	}
 }
 
-motorPWMTim_t* getTims(){
-	return motorPWMTims;
-}
-
-void setMotorOutputs(uint16_t* desiredOut){
-	if(armed){
-		memcpy(motorOutputs, desiredOut, MOTOR_COUNT * sizeof(uint16_t));
+void setMotorOutputs(uint16_t *desiredOut) {
+	if (armed) {
+		memcpy(motor_outputs, desiredOut, MOTOR_COUNT * sizeof(uint16_t));
 		int i;
-		for(i = 0;i < 4;i++){
-			//displayInt("i", i);
-			dshot600(motorDshotBuffers[i],motorOutputs[i]);
-			//HAL_TIM_PWM_Start_DMA(motorPWMTims[m].tim, motorPWMTims[masterCtr % 4].channel, motorDshotBuffers[masterCtr % 4], 18);
-			HAL_TIM_PWM_Start_DMA(motorPWMTims[i].tim, motorPWMTims[i].channel, motorDshotBuffers[i], 18);
+		for (i = 0; i < 4; i++) {
+			dshot600(motor_dshot_buffers[i], motor_outputs[i]);
+			HAL_TIM_PWM_Start_DMA(motorPWMTims[i].tim, motorPWMTims[i].channel,
+					motor_dshot_buffers[i], 18);
 		}
 	}
 }
 
 // constructs a dshot packet for a given value
-void dshot600(uint32_t *motor, uint16_t value)
-{
+void dshot600(uint32_t *motor, uint16_t value) {
 	uint16_t packet = value << 1;
 
 	// compute checksum
 	int csum = 0;
 	int csum_data = packet;
 
-
 	motor[0] = 0;
 	for (int i = 1; i < 4; i++) {
-    csum ^=  csum_data;   // xor data by nibbles
-    	csum_data >>= 4;
+		csum ^= csum_data;   // xor data by nibbles
+		csum_data >>= 4;
 	}
 	csum &= 0xf;
 
@@ -139,10 +115,9 @@ void dshot600(uint32_t *motor, uint16_t value)
 
 	// encoding
 	int i;
-	for (i = 1; i < 17; i++)
-	{
+	for (i = 1; i < 17; i++) {
 		motor[i] = (packet & 0x8000) ? MOTOR_BIT_1 : MOTOR_BIT_0;  // MSB first
-	    packet <<= 1;
+		packet <<= 1;
 	}
 
 	motor[i++] = 0;

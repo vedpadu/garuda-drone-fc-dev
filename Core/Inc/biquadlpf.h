@@ -2,7 +2,7 @@
  * biquadlpf.h
  *
  *  Created on: Aug 2, 2024
- *      Author: vedpa
+ *      Author: vedpadu
  */
 
 #ifndef INC_BIQUADLPF_H_
@@ -10,7 +10,6 @@
 
 #include "arm_math.h"
 #include "math.h"
-//float32_t gyroLpfDelay[4][3] = {0.0};
 
 
 typedef struct {

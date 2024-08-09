@@ -2,8 +2,9 @@
 #define INC_BMI270_H_
 
 #include "stm32f4xx_hal.h"
-#include "main.h"
 #include "math.h"
+#include "spi.h"
+#include "gpio.h"
 
 #define CS_Pin_BMI270 SPI1_CS_Pin
 #define CS_GPIO_Port_BMI270 GPIOA
@@ -16,7 +17,7 @@ extern uint8_t bmi270_data_spi_buf[14];
 #define hspi_bmi270 (&hspi1)
 #define exti_tim (&htim5)
 
-
+// not a complete list
 typedef enum {
     BMI270_REG_CHIP_ID = 0x00,
     BMI270_REG_ERR_REG = 0x02,
@@ -35,6 +36,7 @@ typedef enum {
     BMI270_REG_FIFO_LENGTH_LSB = 0x24,
     BMI270_REG_FIFO_LENGTH_MSB = 0x25,
     BMI270_REG_FIFO_DATA = 0x26,
+	BMI270_REG_CAS = 0x3c,
     BMI270_REG_ACC_CONF = 0x40,
     BMI270_REG_ACC_RANGE = 0x41,
     BMI270_REG_GYRO_CONF = 0x42,
@@ -66,8 +68,9 @@ void write_register(uint8_t rgstr, uint8_t data);
 uint8_t* burst_read(uint8_t rgstr, uint8_t* out_buf, uint16_t size, uint32_t timeout);
 void burst_transmit(uint8_t* transmit_buf, uint32_t timeout, uint16_t size);
 void cs_high();
+void cs_low();
 
-void BMI270ReadData(float* accelBuf, float* gyroBuf);
+void BMI270ReadData();
 int16_t getCAS();
 
 void BMI270Init();

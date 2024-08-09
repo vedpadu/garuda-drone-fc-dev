@@ -2,20 +2,18 @@
  * esc.h
  *
  *  Created on: Jul 24, 2024
- *      Author: vedpa
+ *      Author: vedpadu
  */
 
 #ifndef INC_ESC_H_
 #define INC_ESC_H_
 
-#include <stdint.h>
 #include "stm32f4xx_hal.h"
-#include "main.h"
-#include "string.h"
 #include "tim.h"
+#include "stdint.h"
 
+extern uint8_t armed;
 
-extern uint8_t ready[4];
 #define MOTOR_BIT_0           7
 #define MOTOR_BIT_1           14
 #define MOTOR_BITLENGTH       20
@@ -35,10 +33,8 @@ typedef struct motorPWMTim_s {
 	DMA_HandleTypeDef* dma;
 } motorPWMTim_t;
 
-void updateESC();
+void armESC();
 void dshot600(uint32_t *motor, uint16_t value);
 void setMotorOutputs(uint16_t* desiredOut);
-
-motorPWMTim_t* getTims();
 
 #endif /* INC_ESC_H_ */

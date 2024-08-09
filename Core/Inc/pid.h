@@ -1,8 +1,8 @@
 /*
  * PID.h
  *
- *  Created on: Aug 1, 2024
- *      Author: vedpa
+ *  Created: 2020
+ *      Author: Philip Salmony
  */
 
 #ifndef INC_PID_H_
@@ -15,7 +15,7 @@ typedef struct {
 	float Ki;
 	float Kd;
 
-	/* Derivative low-pass filter time constant */
+	/* Derivative low-pass filter time constant */ // Frequency Cutoff = 1/(2 * pi * tau)
 	float tau;
 
 	/* Output limits */

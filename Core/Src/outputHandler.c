@@ -1,8 +1,9 @@
 /*
- * inputHandler.c
+ * outputHandler.c
+ * Limits output velocity and acceleration
  *
  *  Created on: Aug 8, 2024
- *      Author: vedpa
+ *      Author: vedpadu
  */
 
 #include "outputHandler.h"

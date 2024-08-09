@@ -1,8 +1,8 @@
 /*
- * inputHandler.h
+ * outputHandler.h
  *
  *  Created on: Aug 8, 2024
- *      Author: vedpa
+ *      Author: vedpadu
  */
 
 #ifndef INC_OUTPUTHANDLER_H_

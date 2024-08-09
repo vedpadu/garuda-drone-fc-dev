@@ -102,8 +102,8 @@ void dispImuAndPID(float32_t* gyr, float32_t* acc, outRates_t pidRate, uint16_t*
 // figure out where to put these, these are specific to the motor and the gyro.. not necessary to be here
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	if (htim == &htim5) {
-		if(!ready[3]){
-			updateESC();
+		if(!armed){
+			armESC();
 		}else{
 			float32_t currTick = micros();
 			  float32_t deltTime = (float32_t)(getDeltaTime(currTick, lastKalmanTick)) * 0.000001;
@@ -158,7 +158,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 			  	//dispImu(gyro, accel, 0.1);
 			  	//displayFloats4("r", motorSetpoints.roll, "p", motorSetpoints.pitch, "y", motorSetpoints.yaw, "t", motorSetpoints.throttle);
 			  	//displayFloats4("gyro", (float)countGyros, "motorUpdate", gyro[0], "kalman", gyroPreFilt[0], "delta", (float)(getDeltaTime(currTime, lastTimePrint))/1000);
-				//displayInts4("gyro", countGyros, "motorUpdate", motorCount, "kalman", kalmanCtr, "delta", (getDeltaTime(currTime, lastTimePrint))/1000);
+				//displayInts4("gyro", gyroCtr, "motorUpdate", motorCount, "kalman", kalmanCtr, "delta", (getDeltaTime(currTime, lastTimePrint))/1000);
 				lastTimePrint = currTime;
 				if(spiWorking){
 					HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
