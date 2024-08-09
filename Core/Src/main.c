@@ -87,6 +87,11 @@ int16_t motorCount = 0;
 int gyroCtr = 0;
 int kalmanCtr = 0;
 
+int maxThrott = 1999;
+int minThrott = 0;
+int currentThrott = 0;
+int doThrottUp = 1;
+
 void dispImuAndPID(float32_t* gyr, float32_t* acc, outRates_t pidRate, uint16_t* mot){
 	int len = snprintf(NULL, 0, "imu,%f,%f,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d\n", gyr[0], gyr[1], gyr[2], acc[0], acc[1], acc[2], pidRate.roll, pidRate.pitch, pidRate.yaw, mot[0], mot[1], mot[2], mot[3]);
 	//int len2 = snprintf(NULL, 0, "%u", val2);
@@ -103,12 +108,44 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 		if(!armed){
 			armESC();
 		}else{
-			float32_t currTick = micros();
+
+				//expressLrsSetRcDataFromPayload(rcData);
+
+			int doMotor[4] = {0};
+			int i;
+			for(i = 0;i < 4;i++){
+				if(rcData[4 + i] > 1000){
+					doMotor[i] = 1;
+				}else{
+					doMotor[i] = 0;
+				}
+			}
+			if(doThrottUp){
+				currentThrott++;
+				if(currentThrott > maxThrott){
+					currentThrott = maxThrott;
+					doThrottUp = 0;
+				}
+			}else{
+				currentThrott--;
+				if(currentThrott < minThrott){
+					currentThrott = minThrott;
+					doThrottUp = 1;
+				}
+			}
+			mot_buf[0] = currentThrott + 48;
+			mot_buf[1] = currentThrott + 48;
+			mot_buf[2] = currentThrott + 48;
+			mot_buf[3] = currentThrott + 48;
+			setMotorOutputs(mot_buf);
+
+
+			/*float32_t currTick = micros();
 			  float32_t deltTime = (float32_t)(getDeltaTime(currTick, lastKalmanTick)) * 0.000001;
 			  lastKalmanTick = currTick;
 			  updateKalman(gyro, accel, deltTime);
 			  kalmanCtr++;
-			  motorMixerOuterUpdate(estimate, accel);
+			  motorMixerOuterUpdate(estimate, accel);*/
 //			  float32_t vec[3] = {0.0, 0.0, -1.0};
 //			  quaternion_t inverseEst = quatInverse(estimate);
 //				rotateVector3ByQuaternion(vec, inverseEst); // verify this is working
@@ -126,7 +163,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 		  doFhssIrq();
 	  }else if(htim == &htim10){
 		  if(bmiReady && kalman_initialized){
-			  motorCount++;
+			  /*motorCount++;
 			  if(packetArrived){
 				  // fast loop, gets inputs and does rate control
 				  //TODO: inputs do not have to be here
@@ -134,7 +171,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 				  motorMixerUpdate(rcData, mot_buf, gyro, accel, estimate);
 				  setMotorOutputs(mot_buf);
 
-			  }
+			  }*/
 		  }
 	  }else if(htim == &htim11){
 		  if(bmiReady && kalman_initialized){
@@ -148,6 +185,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 				//displayFloats4("00", estimate.w, "01", estimate.vec[0], "02", estimate.vec[1], "03", estimate.vec[2]);
 			  	uint32_t currTime = micros();
+			  	displayInts4("1", rcData[4], "2", rcData[5], "3", rcData[6], "4", rcData[7]);
 //			  	float32_t vec[3] = {0.0, 0.0, -1.0};
 //				quaternion_t inverseEst = quatInverse(estimate);
 //				rotateVector3ByQuaternion(vec, inverseEst); // verify this is working

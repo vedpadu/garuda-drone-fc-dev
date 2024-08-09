@@ -45,7 +45,7 @@ void armESC() {
 	if (!armed && initialization_ctr > ESC_POWER_UP_TIME + INIT_THROTTLE_MAX * 6 && arming_ctr % MOTOR_COUNT == MOTOR_COUNT - 1) {
 		armed = 1;
 		// convert to 100 hz low prio kalman timer. TODO: make unconstant
-		HAL_NVIC_SetPriority(TIM5_IRQn, 5, 0);
+		HAL_NVIC_SetPriority(TIM5_IRQn, 1, 0);
 		htim5.Instance->PSC = 4799;
 		htim5.Instance->ARR = 99;
 	}
