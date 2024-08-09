@@ -3,7 +3,7 @@
  * Converts Express LRS packets to readable data
  *
  *  Created on: Jul 23, 2024
- *      Author: vedpa
+ *      Author: vedpadu
  */
 #include "elrsToRcData.h"
 
@@ -26,24 +26,17 @@ void unpackChannelDataHybridWide(uint16_t *rcData, volatile elrsOtaPacket_t cons
     unpackAnalogChannelData(rcData, otaPktPtr);
     const uint8_t switchByte = otaPktPtr->rc.switches;
 
-    // The round-robin switch, 6-7 bits with the switch index implied by the nonce. Some logic moved to processRFPacket
     if (wideSwitchIndex >= 7) {
         //txPower = switchByte & 0x3F;
     } else {
         uint8_t bins;
         uint16_t switchValue;
-        /*if (currTlmDenom < 8) {
-            bins = 63;
-            switchValue = switchByte & 0x3F; // 6-bit
-        } else {*/
-            bins = 127;
-            switchValue = switchByte & 0x7F; // 7-bit
-        //}
+		bins = 127;
+		switchValue = switchByte & 0x7F; // 7-bit
+
 
         rcData[5 + wideSwitchIndex] = convertSwitchNb(switchValue, bins);
     }
-
-    //setRssiChannelData(rcData); necessary?
 }
 
 void unpackAnalogChannelData(uint16_t *rcData, volatile elrsOtaPacket_t const * const otaPktPtr)

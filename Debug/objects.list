@@ -10,6 +10,7 @@
 "./Core/Src/imu.o"
 "./Core/Src/kalman.o"
 "./Core/Src/main.o"
+"./Core/Src/math_util.o"
 "./Core/Src/motorMixer.o"
 "./Core/Src/outputHandler.o"
 "./Core/Src/pid.o"

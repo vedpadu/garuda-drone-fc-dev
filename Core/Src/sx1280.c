@@ -5,14 +5,12 @@
  *      Author: vedpa
  */
 #include "sx1280.h"
-#include "expresslrs.h"
-#include "string.h"
-#include "usbd_cdc_if.h"
+
+uint8_t packet_pointer_buf[4] = {0x00};
 
 void initSX1280(){
 	setRFRate(LORA_SF_8, LORA_BW_800, LORA_CR_LI_4_8, 12, fhssGetInitialFreq(), 1);
 }
-
 
 //TODO: interrupt clear
 void setRFRate(uint8_t sF, uint8_t bW, uint8_t cR, uint8_t preambleLen, uint32_t freqReg, uint8_t isInverted){
@@ -30,6 +28,7 @@ void setRFRate(uint8_t sF, uint8_t bW, uint8_t cR, uint8_t preambleLen, uint32_t
 	setRXModeNoTimeout();
 }
 
+// TODO: next two methods with constants
 uint8_t getStatus(){
 	uint8_t getStatus = 0xC0;
 	uint8_t status_buf[1] = {0x00};
@@ -38,6 +37,26 @@ uint8_t getStatus(){
 	HAL_SPI_Receive(&hspi3, status_buf, 1, 10);
 	HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_SET);
 	return status_buf[0];
+}
+
+void sx1280ReadPeriodic(uint8_t* out){
+	uint8_t clear_irq[3] = {0x97, 0xFF, 0xFF};
+	HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi3, clear_irq, 3, 10);
+	HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_SET);
+
+	HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_RESET); // get pointer
+	uint8_t transmit_buf[4] = {0x17, 0x00, 0x00};
+	HAL_SPI_Transmit(&hspi3, transmit_buf, 4, 10);
+	HAL_SPI_Receive(&hspi3, packet_pointer_buf, 4, 10);
+	HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_SET);
+
+	HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_RESET); // read buffer data
+	uint8_t transmit_buf_2[11] = {0x1B, packet_pointer_buf[0] - 16, 0x00};
+	HAL_SPI_Transmit(&hspi3, transmit_buf_2, 11, 1);
+	HAL_SPI_Receive(&hspi3, transmit_buf_2, 11, 10);
+	HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_SET);
+	memcpy((uint8_t *) out, (uint8_t *) transmit_buf_2, 8);
 }
 
 // sets RX Mode without any timeout, continuous listening
@@ -124,7 +143,6 @@ void writeRegister(uint16_t reg, uint8_t data){
 	sendSPIBuffer(buf, 4);
 }
 
-// I hope I'm doing this right.
 uint8_t readRegister(uint16_t reg){
 	uint8_t read_buf[5] = {0x00};
 	uint8_t buf[5] = {SX1280_READ_REGISTER};

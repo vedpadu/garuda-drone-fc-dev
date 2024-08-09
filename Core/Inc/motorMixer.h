@@ -1,15 +1,18 @@
 /*
  * motorMixer.h
+ * Turns RC data to motor outputs
+ * Executes control loops
  *
  *  Created on: Aug 1, 2024
- *      Author: vedpa
+ *      Author: vedpadu
  */
 
 #ifndef INC_MOTORMIXER_H_
 #define INC_MOTORMIXER_H_
 
 #include "pid.h"
-#include "kalman.h"
+#include "math_util.h"
+#include "expresslrs.h"
 #include "esc.h"
 
 extern float32_t eulerAttitude[3];
@@ -79,21 +82,19 @@ typedef struct angleSetpoint_s {
 	float yaw;
 }angleSetpoint_t;
 
+#include "outputHandler.h" // here so that it is able to include outRates_t
+
 extern outRates_t motorSetpoints;
 extern rateSetpoint_t desiredRate;
-extern float outThrott;
-extern float32_t throttleTarget;
-extern float velEst;
 
 void motorMixerInit();
 void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRate, float32_t* currentAccel, quaternion_t attitude);
 void getRCInputs(uint16_t* rcData);
 void getMotorOutputs(outRates_t set, uint16_t* motorOut);
-float32_t clamp(float32_t in, float32_t max, float32_t min);
+
 void achieveDesiredRates(float32_t* currentRate);
 void getDesiredRates(float32_t* eulerAtt);
 void motorMixerOuterUpdate(quaternion_t attitude, float32_t* accel);
-float32_t absVal(float32_t val);
 void getDesiredThrottle(float32_t dotTarget, quaternion_t attitude, float32_t* accel);
 
 #endif /* INC_MOTORMIXER_H_ */

@@ -2,6 +2,8 @@
 #define INC_BMI270_H_
 
 #include "stm32f4xx_hal.h"
+// TODO: pin file?
+#include "main.h"
 #include "math.h"
 #include "spi.h"
 #include "gpio.h"

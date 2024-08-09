@@ -5,24 +5,19 @@
  *      Author: vedpa
  */
 #include "motorMixer.h"
-#include "imu.h"
-#include "main.h"
-#include "math.h"
-#include "expresslrs.h"
-#include "outputHandler.h"
+
+
+
 
 //uint16_t motorOut[MOTOR_COUNT] = {INIT_THROTTLE_MIN, INIT_THROTTLE_MIN, INIT_THROTTLE_MIN, INIT_THROTTLE_MIN}; // values sent to motors -> between 0 and 2048
 rateSetpoint_t desiredRate = {0.0, 0.0, 0.0}; // roll, pitch, yaw
 angleSetpoint_t desiredAngle = {0.0, 0.0, 0.0};
-float32_t desiredAccel[3] = {0.0, 0.0, 0.0};
 float32_t eulerAttitude[3] = {0.0};
-float outThrott = 0.0;
 float32_t throttleTarget = 0.0;
 
 int16_t rcIn[4] = {0, 0, 0, 0}; // roll, pitch, throttle, yaw -> same format as input rcData
-int16_t oldRCIn[4] = {0, 0, 0, 0};
+int16_t oldRCIn[4] = {0, 0, 0, 0}; // do these need to exist, output already smoothed
 outRates_t motorSetpoints = {0.0, 0.0, 0.0, 0.0}; // values between -1 and 1 for roll, pitch, throttle, yaw
-float32_t velEst = 0.0;
 
 float32_t hoverThrottle = -1.0;
 float32_t lastHoverableThrott = 0.0;
@@ -81,6 +76,9 @@ void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRa
 
 	float32_t pitchRate = (float32_t)rcIn[1]/125.0;
 	float32_t rollRate = (float32_t)rcIn[0]/125.0;
+	// rate control
+	//desiredRate.ratePitch = pitchRate;
+	//desiredRate.rateRoll = rollRate;
 	throttleTarget = (float32_t)rcIn[2]/500.0;
 
 	if(!isDisconnected() && throttleTarget > 0){
@@ -92,14 +90,13 @@ void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRa
 	}else{
 		motorSetpoints.throttle = 0;
 	}
-	//desiredRate.ratePitch = pitchRate;
-	//desiredRate.rateRoll = rollRate;
+
 	if(motorSetpoints.throttle >= 0.01){
 		if(hoverThrottle < 0.0){
 			float32_t vec[3] = {0.0, 0.0, -1.0};
 			quaternion_t inverseEst = quatInverse(attitude);
 			rotateVector3ByQuaternion(vec, inverseEst); // verify this is working
-			float32_t dot = vec[0] * accel[0] + vec[1] * accel[1] + vec[2] * accel[2];
+			float32_t dot = vec[0] * currentAccel[0] + vec[1] * currentAccel[1] + vec[2] * currentAccel[2];
 			if(dot < 1.0){
 				lastHoverableThrott = motorSetpoints.throttle;
 			}else if(dot > 1.1){
@@ -125,11 +122,11 @@ void motorMixerOuterUpdate(quaternion_t attitude, float32_t* accel){
 	float32_t rollRate = (float32_t)rcIn[0]/500.0;
 	float32_t yawRate = (float32_t)rcIn[3]/200.0;
 
-
-
 	desiredAngle.pitch = pitchRate;
 	desiredAngle.roll = rollRate;
+
 	quatToEuler(attitude, eulerAttitude);
+
 	if(motorSetpoints.throttle < 0.01){
 		desiredAngle.yaw = eulerAttitude[2];
 	}else{
@@ -139,6 +136,7 @@ void motorMixerOuterUpdate(quaternion_t attitude, float32_t* accel){
 	getDesiredRates(eulerAttitude);
 }
 
+// throttle controller -> inner loop
 void getDesiredThrottle(float32_t dotTarget, quaternion_t attitude, float32_t* accel){
 	float32_t vec[3] = {0.0, 0.0, -1.0};
 	quaternion_t inverseEst = quatInverse(attitude);
@@ -153,7 +151,6 @@ void getDesiredThrottle(float32_t dotTarget, quaternion_t attitude, float32_t* a
 
 	// TODO: tune this ctrlr
 	PIDController_Update(&throttlePID, dotTarget, dot);
-	outThrott = throttlePID.out;
 
 	if(hoverThrottle > 0){
 		// only can help alt hold, not perfect as throttle not linearized and stuff
@@ -165,6 +162,7 @@ void getDesiredThrottle(float32_t dotTarget, quaternion_t attitude, float32_t* a
 
 }
 
+// angle to rate controls -> outer loop
 void getDesiredRates(float32_t* eulerAtt){
 	PIDController_Update(&rollRatePID, (desiredAngle.roll), eulerAtt[0]);
 	PIDController_Update(&pitchRatePID, desiredAngle.pitch, eulerAtt[1]);
@@ -175,6 +173,7 @@ void getDesiredRates(float32_t* eulerAtt){
 	desiredRate.rateYaw = yawRatePID.out;
 }
 
+// rate to motor setpoints -> inner loop
 void achieveDesiredRates(float32_t* currentRate){
 	PIDController_Update(&rollPID, desiredRate.rateRoll, currentRate[0]);
 	PIDController_Update(&pitchPID, desiredRate.ratePitch, currentRate[1]);
@@ -185,24 +184,7 @@ void achieveDesiredRates(float32_t* currentRate){
 	motorSetpoints.yaw = yawPID.out;
 }
 
-float32_t absVal(float32_t val){
-	if(val < 0){
-		return -val;
-	}
-	return val;
-}
-
-float32_t clamp(float32_t in, float32_t max, float32_t min){
-	if(in > max){
-		in = max;
-	}
-	if(in < min){
-		in = min;
-	}
-	return in;
-}
-
-// TODO: switch handling?
+// TODO: switch handling
 void getRCInputs(uint16_t* rcData){
 	int i;
 	for(i = 0;i < MOTOR_COUNT;i++){
@@ -330,26 +312,7 @@ void getMotorOutputs(outRates_t set, uint16_t* motorOut){
 	out[1] = (set.throttle + set.roll - set.pitch + set.yaw) * 2000;
 	out[2] = (set.throttle - set.roll - set.pitch - set.yaw) * 2000;
 	out[3] = (set.throttle - set.roll + set.pitch + set.yaw) * 2000;
-//	if(set.roll > 0){
-//		out[0] += set.roll * 2;
-//		out[1] += set.roll * 2;
-//	}else{
-//		out[2] -= set.roll * 2;
-//		out[3] -= set.roll * 2;
-//	}
-//
-//	if(set.pitch > 0){
-//		out[0] += set.pitch * 2;
-//		out[3] += set.pitch * 2;
-//	}else{
-//		out[1] -= set.pitch * 2;
-//		out[2] -= set.pitch * 2;
-//	}
 
-	/*if(set.throttle > 0.01){
-		out[0] += 50;
-		out[3] += 50;
-	}*/
 	// at extremes these motors will not be able to match exactly
 	int l;
 	for(l = 0;l < MOTOR_COUNT;l++){

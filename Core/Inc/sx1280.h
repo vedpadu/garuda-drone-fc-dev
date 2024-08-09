@@ -10,7 +10,7 @@
 
 #include "stm32f4xx_hal.h"
 #include "main.h"
-#include "math.h"
+#include "expresslrs.h"
 
 #define CS_Pin_SX1280 SPI3_CS_Pin
 #define CS_GPIO_Port_SX1280 SPI3_CS_GPIO_Port
@@ -81,5 +81,6 @@ void setLORAPacketParameters(uint8_t preambleLen, sx1280LORAPacketParams_e heade
 void setRFRate(sx1280LORAModParams_e sF, sx1280LORAModParams_e bW, sx1280LORAModParams_e cR, uint8_t preambleLen, uint32_t freqReg, uint8_t isInverted);
 uint8_t sx1280PollBusy();
 uint8_t getStatus();
+void sx1280ReadPeriodic(uint8_t* out);
 
 #endif /* INC_SX1280_H_ */

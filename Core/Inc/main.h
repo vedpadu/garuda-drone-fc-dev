@@ -103,7 +103,6 @@ void dispImu(float32_t* gyr, float32_t* acc, float32_t timeDelt);
 void dispEst(quaternion_t est);
 void dispMatrixDebug(float32_t* mat);
 void dispEuler(float32_t* eul);
-void quatToEuler(quaternion_t q, float32_t* outEuler);
 
 
 uint32_t micros();

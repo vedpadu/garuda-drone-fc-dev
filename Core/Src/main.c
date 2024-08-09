@@ -70,8 +70,6 @@ char *convert16(uint16_t *a);
 /* USER CODE BEGIN 0 */
 
 uint8_t radioDmaBuffer[8] = {0x00};
-uint8_t packet_pointer_buf[4] = {0x00};
-uint8_t receive_packet_status[4] = {0x00};
 
 uint16_t rcData[8] = {0,0,0,0,0,0,0,0};
 
@@ -127,7 +125,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 		  clockPhaseUpdate(0);
 		  doFhssIrq();
 	  }else if(htim == &htim10){
-		  if(bmiReady && initialized){
+		  if(bmiReady && kalman_initialized){
 			  motorCount++;
 			  if(packetArrived){
 				  // fast loop, gets inputs and does rate control
@@ -139,13 +137,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 			  }
 		  }
 	  }else if(htim == &htim11){
-		  if(bmiReady && initialized){
+		  if(bmiReady && kalman_initialized){
 			  readIMUData();
 			  gyroCtr++;
 		  }
 
 	  }else if(htim == &htim3){
-		  if(bmiReady && initialized){
+		  if(bmiReady && kalman_initialized){
 			  //displayInts4("rc0", rcData[0], "rc1", rcData[1], "rc2", rcData[2], "rc3", rcData[3]);
 
 				//displayFloats4("00", estimate.w, "01", estimate.vec[0], "02", estimate.vec[1], "03", estimate.vec[2]);
@@ -175,24 +173,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
    if (GPIO_Pin == GPIO_PIN_13) {
 	  // use dma?
 	  // switch to a function in the class
+	  // atleast use interrupt mode man..
 	  setLastPacketTime(micros());
-	  uint8_t clear_irq[3] = {0x97, 0xFF, 0xFF};
-	  HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_RESET);
-	  HAL_SPI_Transmit(&hspi3, clear_irq, 3, 10);
-	  HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_SET);
-
-	  HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_RESET); // get pointer
-	  uint8_t transmit_buf[4] = {0x17, 0x00, 0x00};
-	  HAL_SPI_Transmit(&hspi3, transmit_buf, 4, 10);
-	  HAL_SPI_Receive(&hspi3, packet_pointer_buf, 4, 10);
-	  HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_SET);
-
-	  HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_RESET); // read buffer data
-	  uint8_t transmit_buf_2[11] = {0x1B, packet_pointer_buf[0] - 16, 0x00};
-	  HAL_SPI_Transmit(&hspi3, transmit_buf_2, 11, 1);
-	  HAL_SPI_Receive(&hspi3, transmit_buf_2, 11, 10);
-	  HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_SET);
-	  memcpy((uint8_t *) radioDmaBuffer, (uint8_t *) transmit_buf_2, 8);
+	  sx1280ReadPeriodic(radioDmaBuffer);
 
 	  processRFPacket((uint8_t *)radioDmaBuffer, micros());
 	  packetArrived = 1;
@@ -456,19 +439,6 @@ void dispMatrixDebug(float32_t* mat){
 	// do stuff with result
 	CDC_Transmit_FS((uint8_t*)str, strlen(str));
 	free(str);
-}
-
-void quatToEuler(quaternion_t q, float32_t* outEuler){
-
-	float32_t roll = atan2(2*(q.w*q.vec[0] + q.vec[1]*q.vec[2]), 1 - 2*(q.vec[0]*q.vec[0] + q.vec[1]*q.vec[1]));
-	outEuler[0] = roll;
-
-	float32_t pitch = asin(2*(q.w*q.vec[1] - q.vec[2]*q.vec[0]));
-	//float32_t pitch = -(M_PI/2.0) + 2.0 * atan2(sqrt(1 + 2.0 * (q.w * q.vec[1] - q.vec[0] * q.vec[2])), sqrt(1 - 2.0 * (q.w * q.vec[1]- q.vec[0] * q.vec[2])));
-	outEuler[1] = pitch;
-
-	float32_t yaw = atan2(2*(q.w*q.vec[2] + q.vec[0]*q.vec[1]), 1 - 2*(q.vec[1]*q.vec[1] + q.vec[2]*q.vec[2]));
-	outEuler[2] = yaw;
 }
 
 uint32_t micros(){

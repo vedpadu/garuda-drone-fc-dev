@@ -31,7 +31,8 @@ Core/Src/tim.o: ../Core/Src/tim.c ../Core/Inc/tim.h ../Core/Inc/main.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_usb.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd_ex.h \
  ../Middlewares/ST/ARM/DSP/Inc/arm_math.h \
- ../Drivers/CMSIS/Include/cmsis_compiler.h ../Core/Inc/kalman.h
+ ../Drivers/CMSIS/Include/cmsis_compiler.h ../Core/Inc/kalman.h \
+ ../Core/Inc/math_util.h
 ../Core/Inc/tim.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
@@ -68,3 +69,4 @@ Core/Src/tim.o: ../Core/Src/tim.c ../Core/Inc/tim.h ../Core/Inc/main.h \
 ../Middlewares/ST/ARM/DSP/Inc/arm_math.h:
 ../Drivers/CMSIS/Include/cmsis_compiler.h:
 ../Core/Inc/kalman.h:
+../Core/Inc/math_util.h:
