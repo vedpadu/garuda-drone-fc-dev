@@ -45,5 +45,6 @@ arm_matrix_instance_f32 skewSymmetric(float32_t* v);
 
 float32_t clamp(float32_t in, float32_t max, float32_t min);
 float32_t absVal(float32_t val);
+int32_t absInt(int32_t val);
 
 #endif /* INC_MATH_UTIL_H_ */

@@ -5,6 +5,7 @@
  *      Author: vedpa
  */
 #include "motorMixer.h"
+#include "outputHandler.h"
 
 
 
@@ -32,7 +33,7 @@ PIDController pitchPID = {PID_KP, PID_KI, PID_KD,
 						PID_LIM_MIN, PID_LIM_MAX,
 						PID_LIM_MIN_INT, PID_LIM_MAX_INT,
 						SAMPLE_TIME_S };
-PIDController yawPID = {PID_KP, PID_KI, PID_KD,
+PIDController yawPID = {PID_KP, 0.0, PID_KD,
 						PID_TAU,
 						PID_LIM_MIN, PID_LIM_MAX,
 						PID_LIM_MIN_INT, PID_LIM_MAX_INT,
@@ -68,7 +69,7 @@ void motorMixerInit(){
 	PIDController_Init(&yawRatePID);
 	PIDController_Init(&throttlePID);
 
-	initOutputHandler(18.0 * SAMPLE_TIME_S, 3.0 * SAMPLE_TIME_S);
+	initOutputHandler(50.0 * SAMPLE_TIME_S, 40.0 * SAMPLE_TIME_S);
 }
 
 void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRate, float32_t* currentAccel, quaternion_t attitude){

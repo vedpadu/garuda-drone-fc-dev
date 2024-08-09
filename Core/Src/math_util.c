@@ -255,6 +255,13 @@ float32_t absVal(float32_t val){
 	return val;
 }
 
+int32_t absInt(int32_t val){
+	if(val < 0){
+		return -val;
+	}
+	return val;
+}
+
 float32_t clamp(float32_t in, float32_t max, float32_t min){
 	if(in > max){
 		in = max;

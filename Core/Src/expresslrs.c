@@ -6,9 +6,10 @@
  */
 #include "expresslrs.h"
 #include <string.h>
-#include <stdlib.h>
+#include "stdlib.h"
 #include "usbd_cdc_if.h"
 #include "elrsToRcData.h"
+#include "math_util.h"
 // TODO: deal with debug imports
 
 elrsReceiver_t receiver;
@@ -67,39 +68,30 @@ void setLastPacketTime(uint32_t timeMicros){
 
 void clockPhaseUpdate(uint32_t timeMicros){
 	if(receiver.connected != ELRS_DISCONNECTED){
-		//displayInt("rawDiff", phaseLocker.rawPhaseDiff);
-		if(getDeltaTime(phaseLocker.lastClockTimeMicros, phaseLocker.lastPacketTimeMicros) > 1000000){
+		phaseLocker.rawPhaseDiff = getDeltaTime(phaseLocker.lastClockTimeMicros, phaseLocker.lastPacketTimeMicros);
+		if(phaseLocker.rawPhaseDiff > 1000000){
+			displayInt("DCED", 1);
 			disconnect(timeMicros);
 			return;
 		}
-		 // will always be greater than packet time
 
-//		phaseLocker.rawPhaseDiff = (int32_t)getDeltaTime(phaseLocker.lastClockTimeMicros, phaseLocker.lastPacketTimeMicros);
-//		if(phaseLocker.lastUpdateClock){
-//			phaseLocker.rawPhaseDiff = (int32_t)getDeltaTime(phaseLocker.lastClockTimeMicros, phaseLocker.lastPacketTimeMicros); // if this is positive phase backward
-//		}else{
-//			phaseLocker.rawPhaseDiff = (int32_t)getDeltaTime(phaseLocker.lastPacketTimeMicros, phaseLocker.lastClockTimeMicros) * -1; // if this is positive phase forward
-//		}
-//
-//		phaseLocker.lastUpdateClock = 1;
-		phaseLocker.rawPhaseDiff = getDeltaTime(phaseLocker.lastClockTimeMicros, phaseLocker.lastPacketTimeMicros);
-		//phaseLocker.rawPhaseDiff = phaseLocker.lastClockTimeMicros - phaseLocker.lastPacketTimeMicros; // no possibility for this to be negative
 		int32_t defaultInt = (int32_t)airRateConfig[receiver.rateIndex].interval;
 		int32_t offset;
 		phaseLocker.rawPhaseDiff = phaseLocker.rawPhaseDiff % defaultInt;
 		int32_t phaseSigned = (int32_t)phaseLocker.rawPhaseDiff;
-		offset = defaultInt/2 - phaseSigned; // need to be half out of phase so that the events do not coliide!!
-		/*if(phaseLocker.rawPhaseDiff < defaultInt/2){ // phase backwards
-			offset = -phaseSigned;
-		}else{ // phase forward, the closer next packet is ahead
-			offset = defaultInt - phaseSigned;
-		}
-		offset = */
+
+		offset = defaultInt/2 - phaseSigned; // need to be half out of phase so that the interrupts do not coliide!!
 
 		offset = constrain(offset, -defaultInt/4, defaultInt/4); // don't phase too much.
+
+		if(receiver.connected == ELRS_TENTATIVE && absInt(offset) < 50){
+			receiver.connected = ELRS_CONNECTED;
+			displayInt("CONNECTED!", 1);
+		}
 		if(offset > 10 || offset < -10){
 			__HAL_TIM_SET_AUTORELOAD(elrs_tim, defaultInt + (offset/3) - 1);
 		}else{
+			// dont phase if already locked on
 			__HAL_TIM_SET_AUTORELOAD(elrs_tim, defaultInt - 1);
 		}
 		phaseLocker.offset = offset;
@@ -151,42 +143,13 @@ void processRFPacket(uint8_t* packet, uint32_t timeMicros){
 	lastPacketMicros = timeMicros;
 	switch(otaPktPtr->type) {
 	    case ELRS_SYNC_PACKET:
-			/*uint8_t rateInd2 = fhssIndex;
-			char* rateIndString2 = convert(&rateInd2);
-			char* toSend2 = malloc(10);
-			toSend2 = strcat(toSend2, rateIndString2);
-			toSend2 = strcat(toSend2, "\n");
-			CDC_Transmit_FS((uint8_t*)toSend2, strlen(toSend2));
-			free(toSend2);
-			free(rateIndString2);*/
 	    	uint8_t syncVal = processSyncPacket(otaPktPtr, timeMicros);
 	    	if(syncVal == 1){
 	    		lastSync = timeMicros;
-	    		//char* test2 = "SYNC\n";
-	    		//CDC_Transmit_FS((uint8_t *)test2, strlen(test2));
-	    		//displayInt("packetUID3", (int)otaPktPtr->sync.fhssIndex);
-	    		//displayInt("fhssCount", getFHSSIndex());
-	    		/*uint8_t rateInd = UID[3];
-				char* rateIndString = convert(&rateInd);
-				char* toSend = malloc(10);
-				toSend = strcat(toSend, rateIndString);
-				toSend = strcat(toSend, "\n");
-				CDC_Transmit_FS((uint8_t*)toSend, strlen(toSend));
-				free(toSend);
-				free(rateIndString);*/
 	    	}else if(syncVal == 0){
 	    		char* test3 = "SYNC FAIL\n";
 	    		CDC_Transmit_FS((uint8_t *)test3, strlen(test3));
-	    	}else{
-	    		char* test3 = "SYNC FAIL NON THING\n";
-	    		CDC_Transmit_FS((uint8_t *)test3, strlen(test3));
 	    	}
-		    //uint8_t rate = otaPktPtr->sync.rateIndex;
-		    //CDC_Transmit_FS((uint8_t *)data, strlen(data));
-		    //char* data = convert(&rate);
-		    //char* test2 = malloc(10);
-		    //test2 = strcat(test2, data);
-
 		    break;
 	    case ELRS_RC_DATA_PACKET:
 	    	if(receiver.switchMode == 0){
@@ -231,7 +194,13 @@ void disconnect(uint32_t timeMicros){
 	receiver.connected = ELRS_DISCONNECTED;
 	phaseLocker.lastClockTimeMicros = timeMicros;
 	phaseLocker.lastPacketTimeMicros = timeMicros; // reset so we don't have crazy long differences
-	writeRFFrequency(freqStart);
+	receiver.nonceRX = 0;
+	__HAL_TIM_SET_AUTORELOAD(elrs_tim, (int32_t)airRateConfig[receiver.rateIndex].interval);
+	phaseLocker.lastUpdateClock = 0;
+	phaseLocker.rawPhaseDiff = 0;
+
+	receiver.currentFreq = fhssGetInitialFreq();
+	writeRFFrequency(receiver.currentFreq);
 }
 
 void processBindPacket(uint8_t* packet){

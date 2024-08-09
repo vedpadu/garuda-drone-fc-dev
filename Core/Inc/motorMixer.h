@@ -18,7 +18,7 @@
 extern float32_t eulerAttitude[3];
 
 #define PID_KP  0.05 // maybe raise this? //0.028 // 0.045
-#define PID_KI  0.03 // 0.02
+#define PID_KI  0.07 // 0.02
 #define PID_KD  0.0055 //0.023 //0.16 // 0.0045
 
 #define PID_RATE_KP  3.5
@@ -81,8 +81,6 @@ typedef struct angleSetpoint_s {
 	float pitch;
 	float yaw;
 }angleSetpoint_t;
-
-#include "outputHandler.h" // here so that it is able to include outRates_t
 
 extern outRates_t motorSetpoints;
 extern rateSetpoint_t desiredRate;

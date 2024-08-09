@@ -9,6 +9,7 @@
 #define INC_OUTPUTHANDLER_H_
 
 #include "motorMixer.h"
+#include "math_util.h"
 
 void initOutputHandler(float32_t maxVel, float32_t maxAccel);
 void outputUpdate(outRates_t* out);

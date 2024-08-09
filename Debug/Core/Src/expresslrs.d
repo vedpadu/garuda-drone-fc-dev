@@ -41,7 +41,7 @@ Core/Src/expresslrs.o: ../Core/Src/expresslrs.c ../Core/Inc/expresslrs.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h \
- ../Core/Inc/elrsToRcData.h
+ ../Core/Inc/elrsToRcData.h ../Core/Inc/math_util.h
 ../Core/Inc/expresslrs.h:
 ../Core/Inc/sx1280.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
@@ -92,3 +92,4 @@ Core/Src/expresslrs.o: ../Core/Src/expresslrs.c ../Core/Inc/expresslrs.h \
 ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h:
 ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h:
 ../Core/Inc/elrsToRcData.h:
+../Core/Inc/math_util.h:
