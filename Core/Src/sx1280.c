@@ -11,43 +11,13 @@
 
 void initSX1280(){
 	setRFRate(LORA_SF_8, LORA_BW_800, LORA_CR_LI_4_8, 12, fhssGetInitialFreq(), 1);
-	/*setHighPower();
-	HAL_Delay(1);
-	setStandby();
-	HAL_Delay(1);
-	setPacketTypeLORA();
-	HAL_Delay(1);
-
-	writeRFFrequency((uint32_t)((2400400000)/ SX1280_PLL_STEP));
-	//writeRFFrequency((uint32_t)((2400400000)/ SX1280_PLL_STEP));
-	HAL_Delay(1);
-
-
-	//{3, 50, LORA_BW_800, LORA_SF_8, LORA_CR_LI_4_8, 20000, 2, 12}
-	//{0, 500, LORA_BW_800, LORA_SF_5, LORA_CR_LI_4_6, 2000, 4, 12}
-	setRFRate(LORA_SF_8, LORA_BW_800, LORA_CR_LI_4_8, 12, (uint32_t)((2400400000)/ SX1280_PLL_STEP), 1);
-	setLORAModParameters(LORA_SF_5, LORA_BW_800, LORA_CR_LI_4_6);
-	HAL_Delay(1);
-
-
-	setLORAPacketParameters(12, LORA_HEADER_IMPLICIT, 0x08, LORA_CRC_DISABLE, LORA_IQ_INVERTED);
-	HAL_Delay(1);
-
-	configureInterrupts();
-	HAL_Delay(1);
-
-	setRXModeNoTimeout();
-	HAL_Delay(1);*/
 }
 
 
 //TODO: interrupt clear
 void setRFRate(uint8_t sF, uint8_t bW, uint8_t cR, uint8_t preambleLen, uint32_t freqReg, uint8_t isInverted){
-	//setStandby();
 	setHighPower();
-	//HAL_Delay(1);
 	setStandby();
-	//HAL_Delay(1);
 	setPacketTypeLORA();
 	writeRFFrequency(freqReg);
 	setLORAModParameters(sF, bW, cR);
@@ -79,7 +49,7 @@ void setRXModeNoTimeout(){
 // boof, i just send RX done interrupts to all DIO pins because I cannot be bothered to test which DIO Pin is actually wired to the interrupt
 void configureInterrupts(){
 	// interrupt mask is 0x0002, as the rxdone interrupt is on the second bit of the mask, explained in the data sheet
-	// TODO: make this method not constant for other expresslrs necessities, but atm this script is just for the receiver.
+	// TODO: make this method not constant for other receiver necessities, but atm this script is just for the receiver.
 	uint8_t irq_configure_buf[9] = {SX1280_SET_DIO_IRQ_PARAMS, 0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00, 0x02};
 	sendSPIBuffer(irq_configure_buf, 9);
 }
@@ -92,7 +62,7 @@ void setLORAPacketParameters(uint8_t preambleLen, uint8_t headerType, uint8_t pa
 void setLORAModParameters(uint8_t sF, uint8_t bW, uint8_t cR){
 	uint8_t lora_mod_params_buff[4] = {SX1280_SET_MODULATION_PARAMS, sF, bW, cR};
 	sendSPIBuffer(lora_mod_params_buff, 4);
-	//HAL_Delay(1);
+
 	uint8_t sFCorrection = 0x00;
 
 	if(sF == LORA_SF_5 || sF == LORA_SF_6){
@@ -103,14 +73,12 @@ void setLORAModParameters(uint8_t sF, uint8_t bW, uint8_t cR){
 		sFCorrection = 0x32;
 	}
 	writeRegister(0x0925, sFCorrection);
-	//HAL_Delay(1);
 
 	uint8_t freq_comp = readRegister(0x093c);
 	freq_comp = freq_comp & 0b11111000;
 	freq_comp = freq_comp | 0x01;
 
 	writeRegister(0x093c, freq_comp);
-
 }
 
 void setStandby(){
@@ -139,7 +107,7 @@ uint8_t sx1280PollBusy(void)
 
 void writeRFFrequency(uint32_t freqReg){
 	uint8_t buf[4] = {SX1280_RADIO_SET_RFFREQUENCY};
-	//uint8_t buf[4] = {0x86, 0xB8, 0xA5, 0x6A};
+
 	buf[1] = (uint8_t)((freqReg >> 16) & 0xFF);
 	buf[2] = (uint8_t)((freqReg >> 8) & 0xFF);
 	buf[3] = (uint8_t)((freqReg) & 0xFF);

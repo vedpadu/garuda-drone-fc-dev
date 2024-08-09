@@ -14,30 +14,29 @@
 
 extern float32_t eulerAttitude[3];
 
-#define PID_KP  0.045 // maybe raise this? //0.028 // 0.045
-#define PID_KI  0.033 // 0.02
-#define PID_KD  0.0045 //0.023 //0.16 // 0.0045
+#define PID_KP  0.05 // maybe raise this? //0.028 // 0.045
+#define PID_KI  0.03 // 0.02
+#define PID_KD  0.0055 //0.023 //0.16 // 0.0045
 
 #define PID_RATE_KP  3.5
 #define PID_RATE_KI  0.0// 0.5
 #define PID_RATE_KD  -0.4
 
-#define PID_THROTTLE_KP  0.0 // 0.1
+#define PID_THROTTLE_KP  0.05 // 0.1
 #define PID_THROTTLE_KI  0.0
 #define PID_THROTTLE_KD  0.0 // 0.01
-#define PID_THROTTLE_KF  0.42
 
 #define PID_THROTTLE_LIM_MIN -1.0
 #define PID_THROTTLE_LIM_MAX  1.0
 
-#define PID_THROTTLE_LIM_MIN_INT -0.1
-#define PID_THROTTLE_LIM_MAX_INT  0.1
+#define PID_THROTTLE_LIM_MIN_INT -0.01
+#define PID_THROTTLE_LIM_MAX_INT  0.01
 
-#define PID_RATE_LIM_MIN -20.0
-#define PID_RATE_LIM_MAX  20.0
+#define PID_RATE_LIM_MIN -10.0
+#define PID_RATE_LIM_MAX  10.0
 
-#define PID_RATE_LIM_MIN_INT -2.0
-#define PID_RATE_LIM_MAX_INT  2.0
+#define PID_RATE_LIM_MIN_INT -0.2
+#define PID_RATE_LIM_MAX_INT  0.2
 
 #define PID_TAU 0.01 //0.1 // too high? // 0.15
 #define PID_RATE_TAU 0.005
@@ -46,8 +45,8 @@ extern float32_t eulerAttitude[3];
 #define PID_LIM_MIN -1.0
 #define PID_LIM_MAX  1.0
 
-#define PID_LIM_MIN_INT -0.05
-#define PID_LIM_MAX_INT  0.05
+#define PID_LIM_MIN_INT -0.017
+#define PID_LIM_MAX_INT  0.017
 
 #define SAMPLE_TIME_S 0.002
 #define SAMPLE_TIME_KALMAN 0.01
@@ -88,7 +87,6 @@ extern float velEst;
 
 void motorMixerInit();
 void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRate, float32_t* currentAccel, quaternion_t attitude);
-void getDesiredRatesAccel(float32_t* accel);
 void getRCInputs(uint16_t* rcData);
 void getMotorOutputs(outRates_t set, uint16_t* motorOut);
 float32_t clamp(float32_t in, float32_t max, float32_t min);

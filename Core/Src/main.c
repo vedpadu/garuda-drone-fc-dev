@@ -62,15 +62,12 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-void dshot600(uint32_t *motor, uint16_t value);
 char *convert(uint8_t *a);
 char *convert16(uint16_t *a);
-float lsb_to_mps2(int16_t val, float g_range, uint8_t bit_width);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint32_t last_tick_start = 0;
 
 uint8_t radioDmaBuffer[8] = {0x00};
 uint8_t packet_pointer_buf[4] = {0x00};
@@ -84,17 +81,12 @@ int packetArrived = 0;
 int countMotor = 0;
 
 uint16_t mot_buf[4] = {0};
-uint8_t doBlink = 0;
 
-int16_t oldRCVal = 48;
 uint32_t lastKalmanTick = 0;
 
 uint32_t lastTimePrint = 0;
-uint16_t gyroCount = 0;
-float32_t gyroSum = 0.0;
 int16_t motorCount = 0;
 int gyroCtr = 0;
-float totalGyr = 0.0;
 int kalmanCtr = 0;
 
 void dispImuAndPID(float32_t* gyr, float32_t* acc, outRates_t pidRate, uint16_t* mot){
@@ -130,37 +122,22 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 		}
 
 	  }else if(htim == &htim9){
+		  // keep the internal clock in phase
 		  setLastClockTime(micros());
 		  clockPhaseUpdate(0);
 		  doFhssIrq();
-
-		  // Timer for radio
 	  }else if(htim == &htim10){
-
 		  if(bmiReady && initialized){
 			  motorCount++;
-			  /*float32_t currTick = micros();
-			  float32_t deltTime = (float32_t)(getDeltaTime(currTick, lastKalmanTick)) * 0.000001;
-			  lastKalmanTick = currTick;
-			  updateKalman(gyroPreFilt, accelPreFilt, deltTime);*/
 			  if(packetArrived){
+				  // fast loop, gets inputs and does rate control
+				  //TODO: inputs do not have to be here
 				  expressLrsSetRcDataFromPayload(rcData);
-
-
-
-
-
 				  motorMixerUpdate(rcData, mot_buf, gyro, accel, estimate);
 				  setMotorOutputs(mot_buf);
 
 			  }
 		  }
-
-
-		  //dispEuler(eulerAttitude);
-
-		  //countMicros++;
-		  //handleConnectionState(micros());
 	  }else if(htim == &htim11){
 		  if(bmiReady && initialized){
 			  readIMUData();
@@ -274,7 +251,6 @@ int main(void)
   MX_TIM10_Init();
   MX_TIM11_Init();
   /* USER CODE BEGIN 2 */
-  uint32_t startingTick = HAL_GetTick();
   HAL_TIM_Base_Start_IT(&htim3); // debug loop and LEDs
   HAL_TIM_Base_Start_IT(&htim9); // clock express lrs phase // 250 hz atm
   HAL_TIM_Base_Start_IT(&htim5); // esc // 4000 hz

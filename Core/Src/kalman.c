@@ -11,6 +11,8 @@
 #include "main.h"
 #include "stdlib.h"
 
+//TODO: move util to a util math class
+
 quaternion_t estimate;
 float32_t estimate_covar_mat[15][15] = {0};
 float32_t observation_covar_mat[3][3] = {0};

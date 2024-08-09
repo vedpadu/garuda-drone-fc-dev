@@ -9,6 +9,7 @@
 #include "main.h"
 #include "math.h"
 #include "expresslrs.h"
+#include "outputHandler.h"
 
 //uint16_t motorOut[MOTOR_COUNT] = {INIT_THROTTLE_MIN, INIT_THROTTLE_MIN, INIT_THROTTLE_MIN, INIT_THROTTLE_MIN}; // values sent to motors -> between 0 and 2048
 rateSetpoint_t desiredRate = {0.0, 0.0, 0.0}; // roll, pitch, yaw
@@ -70,8 +71,9 @@ void motorMixerInit(){
 	PIDController_Init(&rollRatePID);
 	PIDController_Init(&pitchRatePID);
 	PIDController_Init(&yawRatePID);
-
 	PIDController_Init(&throttlePID);
+
+	initOutputHandler(18.0 * SAMPLE_TIME_S, 3.0 * SAMPLE_TIME_S);
 }
 
 void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRate, float32_t* currentAccel, quaternion_t attitude){
@@ -121,9 +123,9 @@ void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRa
 }
 
 void motorMixerOuterUpdate(quaternion_t attitude, float32_t* accel){
-	float32_t pitchRate = (float32_t)rcIn[1]/500.0;
+	float32_t pitchRate = -(float32_t)rcIn[1]/500.0;
 	float32_t rollRate = (float32_t)rcIn[0]/500.0;
-	float32_t yawRate = (float32_t)rcIn[3]/500.0;
+	float32_t yawRate = (float32_t)rcIn[3]/200.0;
 
 
 
@@ -164,18 +166,6 @@ void getDesiredThrottle(float32_t dotTarget, quaternion_t attitude, float32_t* a
 	}
 
 
-}
-
-void getDesiredRatesAccel(float32_t* accel){
-	//quatToEuler(attitude, eulerAttitude);
-	// convert to roll pitch yaw
-	PIDController_Update(&rollRatePID, -desiredAccel[1], -accel[1]);
-	PIDController_Update(&pitchRatePID, desiredAccel[0], accel[0]);
-	//PIDController_Update(&yawRatePID, desiredAccel[2], eulerAttitude[2]);
-
-	desiredRate.rateRoll = rollRatePID.out;
-	desiredRate.ratePitch = pitchRatePID.out;
-	//desiredRate.rateYaw = yawRatePID.out;
 }
 
 void getDesiredRates(float32_t* eulerAtt){
@@ -271,25 +261,120 @@ void getRCInputs(uint16_t* rcData){
 
 void getMotorOutputs(outRates_t set, uint16_t* motorOut){
 	float32_t out[MOTOR_COUNT] = {0};
+	outputUpdate(&set);
+	/*float32_t throttle_avg_max = 0.5 * 0.5 + 0.5 * set.throttle;;
+	if(hoverThrottle > 0.0){
+		throttle_avg_max = 0.5 * hoverThrottle + 0.5 * set.throttle;
+	}
+
+
+	throttle_avg_max = clamp(throttle_avg_max, 1.0, set.throttle);
+	float32_t throttle_best_rpy = 0.5;
+	if(throttle_avg_max < throttle_best_rpy){
+		throttle_best_rpy = throttle_avg_max;
+	}
+
+	out[0] = set.roll + set.pitch;
+	out[1] = set.roll - set.pitch;
+	out[2] = -set.roll - set.pitch;
+	out[3] = -set.roll + set.pitch;
+
+	float32_t yawArr[MOTOR_COUNT] = {-set.yaw, set.yaw, -set.yaw, set.yaw};
+
+	float32_t room[MOTOR_COUNT] = {0};
+	float32_t yawAllowed = 10000.0;
+	int i;
+	for(i = 0;i < MOTOR_COUNT;i++){
+		room[i] = out[i] + throttle_best_rpy;
+		if(yawArr[i] != 0.0){
+			room[i] = 1 - room[i];
+		}
+		if(room[i] < 0.0){
+			room[i] = 0.0;
+		}
+		if(room[i] < yawAllowed){
+			yawAllowed = room[i];
+		}
+	}
+
+	set.yaw = clamp(set.yaw, yawAllowed, -yawAllowed);
+	out[0] += -set.yaw;
+	out[1] += set.yaw;
+	out[2] += -set.yaw;
+	out[3] += set.yaw;
+
+	float32_t rpy_low = out[0];
+	float32_t rpy_high = out[0];
+	int j;
+	for(j = 1; j < MOTOR_COUNT;j++){
+		if(out[j] < rpy_low){
+			rpy_low = out[j];
+		}
+		if(out[j] > rpy_high){
+			rpy_high = out[j];
+		}
+	}
+	float32_t rpy_scale = 1.0;
+	if(rpy_high - rpy_low > 1.0){
+		rpy_scale = 1.0/(rpy_high - rpy_low);
+	}
+	if(throttle_avg_max + rpy_low < 0.0){
+		if(-throttle_avg_max / rpy_low < rpy_scale){
+			rpy_scale = -throttle_avg_max / rpy_low;
+		}
+	}
+
+	rpy_low *= rpy_scale;
+	rpy_high *= rpy_scale;
+	throttle_best_rpy = -rpy_low;
+	float32_t thr_adj = set.throttle - throttle_best_rpy;
+	if(rpy_scale < 1.0){
+		thr_adj = 0.0;
+	}
+	thr_adj = clamp(thr_adj, 1.0 - (throttle_best_rpy + rpy_high), 0.0);
+
+	int k;
+	for(k = 0;k < MOTOR_COUNT;k++){
+		out[k] = ((throttle_best_rpy + thr_adj) + out[k] * rpy_scale) * 2000.0;
+	}*/
+
+
+
 	out[0] = (set.throttle + set.roll + set.pitch - set.yaw) * 2000;
 	out[1] = (set.throttle + set.roll - set.pitch + set.yaw) * 2000;
 	out[2] = (set.throttle - set.roll - set.pitch - set.yaw) * 2000;
 	out[3] = (set.throttle - set.roll + set.pitch + set.yaw) * 2000;
+//	if(set.roll > 0){
+//		out[0] += set.roll * 2;
+//		out[1] += set.roll * 2;
+//	}else{
+//		out[2] -= set.roll * 2;
+//		out[3] -= set.roll * 2;
+//	}
+//
+//	if(set.pitch > 0){
+//		out[0] += set.pitch * 2;
+//		out[3] += set.pitch * 2;
+//	}else{
+//		out[1] -= set.pitch * 2;
+//		out[2] -= set.pitch * 2;
+//	}
+
 	/*if(set.throttle > 0.01){
 		out[0] += 50;
 		out[3] += 50;
 	}*/
 	// at extremes these motors will not be able to match exactly
-	int i;
-	for(i = 0;i < MOTOR_COUNT;i++){
-		if(out[i] > 1999.0){
-			out[i] = 1999.0;
+	int l;
+	for(l = 0;l < MOTOR_COUNT;l++){
+		if(out[l] > 1999.0){
+			out[l] = 1999.0;
 		}
-		if(out[i] < 0.0){
-			out[i] = 0.0;
+		if(out[l] < 0.0){
+			out[l] = 0.0;
 		}
-		motorOut[i] = (uint16_t)out[i];
-		motorOut[i] += 48;
+		motorOut[l] = (uint16_t)out[l];
+		motorOut[l] += 48;
 	}
 }
 

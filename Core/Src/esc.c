@@ -64,7 +64,6 @@ void updateESC(){
 	 }
 
 	 if (!armed && initializationCtr > ESC_POWER_UP_TIME+INIT_THROTTLE_MAX*6){
-		 doBlink = 1;
 		 armed = 1;
 		// HAL_TIM_Base_Stop_IT(&htim5);
 		 //htim5.Instance->PSC = 4799;

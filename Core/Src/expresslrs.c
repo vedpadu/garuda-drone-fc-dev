@@ -29,7 +29,7 @@ uint32_t lastSync = 0;
 uint32_t lastPacketMicros = 0;
 
 // FHSS Configs for the SX1280
-// start and stop frequencies are magic numbers, I assume expressLRS
+// start and stop frequencies are pulled from betaflight
 uint32_t freqStart =  (uint32_t)((2400400000)/ SX1280_PLL_STEP);
 uint32_t freqStop = (uint32_t)((2479400000)/ SX1280_PLL_STEP);
 uint8_t freqCount = 80;
@@ -46,7 +46,6 @@ void setBindingMode(){
 	if(!receiver.inBindingMode){
 		receiver.inBindingMode = 1;
 		memcpy(UID, BindingUID, 6);
-		//UID = BindingUID;
 
 		refreshExpressLRS(bindRateIndex);
 	}
