@@ -91,6 +91,7 @@ int maxThrott = 1999;
 int minThrott = 0;
 int currentThrott = 0;
 int doThrottUp = 1;
+int typeOfThing = 0;
 
 void dispImuAndPID(float32_t* gyr, float32_t* acc, outRates_t pidRate, uint16_t* mot){
 	int len = snprintf(NULL, 0, "imu,%f,%f,%f,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d\n", gyr[0], gyr[1], gyr[2], acc[0], acc[1], acc[2], pidRate.roll, pidRate.pitch, pidRate.yaw, mot[0], mot[1], mot[2], mot[3]);
@@ -110,16 +111,24 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 		}else{
 
 				//expressLrsSetRcDataFromPayload(rcData);
-
 			int doMotor[4] = {0};
-			int i;
-			for(i = 0;i < 4;i++){
-				if(rcData[4 + i] > 1000){
-					doMotor[i] = 1;
-				}else{
-					doMotor[i] = 0;
-				}
-			}
+//			int i;
+//			int ind = typeOfThing % 9;
+//			if(ind < 4){
+//				doMotor[ind] = 1;
+//			}else if(ind < 7){
+//				doMotor[ind - 4] = 1;
+//				doMotor[ind - 3] = 1;
+//			}else if(ind == 7){
+//				doMotor[ind - 4] = 1;
+//				doMotor[0] = 1;
+//			}else{
+			doMotor[0] = 1;
+			doMotor[1] = 1;
+			doMotor[2] = 1;
+			doMotor[3] = 1;
+
+
 			if(doThrottUp){
 				currentThrott++;
 				if(currentThrott > maxThrott){
@@ -131,12 +140,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 				if(currentThrott < minThrott){
 					currentThrott = minThrott;
 					doThrottUp = 1;
+					typeOfThing++;
 				}
 			}
-			mot_buf[0] = currentThrott + 48;
-			mot_buf[1] = currentThrott + 48;
-			mot_buf[2] = currentThrott + 48;
-			mot_buf[3] = currentThrott + 48;
+			mot_buf[0] = currentThrott * doMotor[0] + 48;
+			mot_buf[1] = currentThrott * doMotor[1] + 48;
+			mot_buf[2] = currentThrott * doMotor[2] + 48;
+			mot_buf[3] = currentThrott * doMotor[3] + 48;
 			setMotorOutputs(mot_buf);
 
 
@@ -185,7 +195,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 				//displayFloats4("00", estimate.w, "01", estimate.vec[0], "02", estimate.vec[1], "03", estimate.vec[2]);
 			  	uint32_t currTime = micros();
-			  	displayInts4("1", rcData[4], "2", rcData[5], "3", rcData[6], "4", rcData[7]);
+			  	//displayInts4("1", rcData[4], "2", rcData[5], "3", rcData[6], "4", rcData[7]);
 //			  	float32_t vec[3] = {0.0, 0.0, -1.0};
 //				quaternion_t inverseEst = quatInverse(estimate);
 //				rotateVector3ByQuaternion(vec, inverseEst); // verify this is working
