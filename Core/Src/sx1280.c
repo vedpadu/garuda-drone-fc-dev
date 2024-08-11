@@ -28,7 +28,6 @@ void sx1280_set_RF_rate(uint8_t sF, uint8_t bW, uint8_t cR, uint8_t preambleLen,
 	sx1280_set_RX_mode_no_timeout();
 }
 
-// TODO: next two methods with constants
 void sx1280_read_interrupt(uint8_t* out){
 	uint8_t clear_irq[3] = {SX1280_CLEAR_INTERRUPTS, 0xFF, 0xFF};
 	HAL_GPIO_WritePin(CS_GPIO_Port_SX1280, CS_Pin_SX1280, GPIO_PIN_RESET);

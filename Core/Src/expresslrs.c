@@ -10,7 +10,7 @@
 #include "stdlib.h"
 #include "usbd_cdc_if.h"
 #include "math_util.h"
-// TODO: deal with debug imports
+// TODO: change order to be better
 
 elrsReceiver_t receiver;
 elrsPhase_t phaseLocker;

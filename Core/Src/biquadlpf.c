@@ -8,7 +8,7 @@
 
 #include "biquadlpf.h"
 
-void biquadLPFInit(BiquadLPF* filter, float cutoff_freq, float sample_freq){
+void biquadLPFInit(BiquadLPF* filter, float cutoffFreq, float sampleFreq){
 	// initialize variables
 	float32_t empty[3] = {0};
 	assignVector(filter->x_n1, empty);
@@ -16,12 +16,12 @@ void biquadLPFInit(BiquadLPF* filter, float cutoff_freq, float sample_freq){
 	assignVector(filter->y_n1, empty);
 	assignVector(filter->y_n2, empty);
 
-	filter->cutoff_freq = cutoff_freq;
-	filter->sample_freq = sample_freq;
+	filter->cutoff_freq = cutoffFreq;
+	filter->sample_freq = sampleFreq;
 
 	// compute coefficients from cutoff frequency
 	float32_t Q = 1.0/sqrt(2.0);
-	float32_t omega = 2 * M_PI * cutoff_freq / sample_freq;
+	float32_t omega = 2 * M_PI * cutoffFreq / sampleFreq;
 	float32_t alpha = sin(omega) / (2 * Q);
 	float32_t a0 = 1 + alpha;
 

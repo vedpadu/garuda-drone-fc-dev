@@ -12,10 +12,12 @@
 #include "arm_math.h"
 #include "math_util.h"
 
+#define ACCEL_HEALTH_COEFFICIENT 15.0
+
 extern quaternion_t estimate;
 extern int kalman_initialized;
 
-arm_matrix_instance_f32 process_covariance(float32_t time_delta);
+arm_matrix_instance_f32 processCovariance(float32_t time_delta);
 
 float32_t getAccelHealth(float32_t* acc, float32_t* gyr);
 

@@ -14,6 +14,7 @@
 
 extern uint8_t armed;
 
+// Dshot parameters
 #define MOTOR_BIT_0           7
 #define MOTOR_BIT_1           14
 #define MOTOR_BITLENGTH       20

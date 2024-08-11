@@ -1,21 +1,13 @@
 /*
  * kalman.c
+ * MEKF
  *
  *  Created on: Jul 24, 2024
- *      Author: vedpa
+ *      Author: vedpadu
  */
-
-
-#include "arm_math.h"
 #include "kalman.h"
-#include "main.h"
-#include "stdlib.h"
-
-//TODO: move util to a util math class
 
 quaternion_t estimate;
-
-
 
 // system covariance matrices
 float32_t estimate_covar_mat[15][15] = {0};
@@ -78,12 +70,12 @@ float32_t kalman_accel[3] = {0};
 
 int kalman_initialized = 0;
 
-void initKalman(quaternion_t initial_est, float32_t estimate_cov, float32_t gyro_cov, float32_t gyro_bias_cov,
-		float32_t accel_proc_cov, float32_t accel_bias_cov, float32_t accel_obs_cov){
-	estimate = initial_est;
-	estimate_covariance = generateDiagonalMatrix(estimate_covar_mat[0], 15, estimate_cov);
+void initKalman(quaternion_t initialEst, float32_t estimateCov, float32_t gyroCov, float32_t gyroBiasCov,
+		float32_t accelProcCov, float32_t accelBiasCov, float32_t accelObsCov){
+	estimate = initialEst;
+	estimate_covariance = generateDiagonalMatrix(estimate_covar_mat[0], 15, estimateCov);
 
-	observation_covariance = generateDiagonalMatrix(observation_covar_mat[0], 3, accel_obs_cov);
+	observation_covariance = generateDiagonalMatrix(observation_covar_mat[0], 3, accelObsCov);
 
 	float32_t G1[3][3] = {0};
 	diagonalMat(G1[0], 3, -1.0);
@@ -92,10 +84,10 @@ void initKalman(quaternion_t initial_est, float32_t estimate_cov, float32_t gyro
 	injectMatrix(G_mat[0], G1[0], 0, 9, 15, 3, 0);
 	injectMatrix(G_mat[0], G2[0], 6, 3, 15, 3, 0);
 
-	gyro_covariance = generateDiagonalMatrix(gyro_covar_mat[0], 3, gyro_cov);
-	gyro_bias_covariance = generateDiagonalMatrix(gyro_bias_covar_mat[0], 3, gyro_bias_cov);
-	accel_covariance = generateDiagonalMatrix(accel_covar_mat[0], 3, accel_proc_cov);
-	accel_bias_covariance = generateDiagonalMatrix(accel_bias_covar_mat[0], 3, accel_bias_cov);
+	gyro_covariance = generateDiagonalMatrix(gyro_covar_mat[0], 3, gyroCov);
+	gyro_bias_covariance = generateDiagonalMatrix(gyro_bias_covar_mat[0], 3, gyroBiasCov);
+	accel_covariance = generateDiagonalMatrix(accel_covar_mat[0], 3, accelProcCov);
+	accel_bias_covariance = generateDiagonalMatrix(accel_bias_covar_mat[0], 3, accelBiasCov);
 
 	arm_mat_init_f32(&Q, 15, 15, Q_mat[0]);
 	arm_mat_init_f32(&F, 15, 15, F_mat[0]);
@@ -117,7 +109,7 @@ void initKalman(quaternion_t initial_est, float32_t estimate_cov, float32_t gyro
 }
 
 // assumes Q instance already initialized
-arm_matrix_instance_f32 process_covariance(float32_t time_delta){
+arm_matrix_instance_f32 processCovariance(float32_t time_delta){
 	diagonalMat(Q_mat[0], 15, 0.0);
 	injectMatrix(Q_mat[0], addMatrices(createScaleMatrix(&gyro_covariance, time_delta, 3), createScaleMatrix(&gyro_bias_covariance, pow(time_delta, 3.0) / 3.0, 3), 3),
 			0, 0, 15, 3, 1);
@@ -149,7 +141,7 @@ arm_matrix_instance_f32 process_covariance(float32_t time_delta){
 }
 
 // TODO: check function statuses
-void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t time_delta){
+void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t timeDelta){
 
 	// create a copy of the measurement so that the gyro and accelerometer raw measurements are not changed
 	subtractFromVector(kalman_accel, kalman_accel, 3);
@@ -163,7 +155,7 @@ void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t time_de
 
 	// integrate angular velocity
 	quaternion_t foldQuat = {0.0, {kalman_gyro[0], kalman_gyro[1], kalman_gyro[2]}};
-	addToQuat(&estimate, quatMultiplyScalar(quatMultiply(estimate, foldQuat), time_delta * 0.5));
+	addToQuat(&estimate, quatMultiplyScalar(quatMultiply(estimate, foldQuat), timeDelta * 0.5));
 	normalizeQuaternion(&estimate);
 
 	// form process model
@@ -181,7 +173,7 @@ void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t time_de
 	injectMatrix(G_mat[0], G1_inst.pData, 0, 0, 15, 3, 1);
 	injectMatrix(G_mat[0], G2_inst.pData, 3, 0, 15, 3, 0);
 	injectMatrix(G_mat[0], G3_inst.pData, 3, 12, 15, 3, 1);
-	arm_mat_scale_f32(&G, time_delta, &F); // something wrong here ish?
+	arm_mat_scale_f32(&G, timeDelta, &F); // something wrong here ish?
 	arm_mat_add_f32(&identity_inst, &F, &F);
 
 	free(G2_temp.pData);
@@ -190,7 +182,7 @@ void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t time_de
 	arm_mat_mult_f32(&F, &estimate_covariance, &estimate_covar_mid);
 	arm_mat_trans_f32(&F, &Ft);
 	arm_mat_mult_f32(&estimate_covar_mid, &Ft, &estimate_covariance);
-	arm_matrix_instance_f32 proc = process_covariance(time_delta); // why does this have to be called?
+	arm_matrix_instance_f32 proc = processCovariance(timeDelta); // why does this have to be called?
 	arm_mat_add_f32(&estimate_covariance, &proc, &estimate_covariance);
 
 
@@ -237,9 +229,7 @@ void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t time_de
 float32_t getAccelHealth(float32_t* acc, float32_t* gyr){
 	float32_t mag = acc[0] * acc[0] + acc[1] * acc[1] + acc[2] * acc[2];
 	float32_t diff = mag - 1.0;
-	if(diff < 0){
-		diff = -diff;
-	}
-	return 1.0 + (diff * 15.0);
+	diff = absVal(diff);
+	return 1.0 + (diff * ACCEL_HEALTH_COEFFICIENT);
 }
 

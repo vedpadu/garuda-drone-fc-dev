@@ -15,8 +15,6 @@
 #include "expresslrs.h"
 #include "esc.h"
 
-extern float32_t current_euler_attitude[3];
-
 // pid constants
 #define PID_MOTOR_KP  0.05 // maybe raise this? //0.028 // 0.045
 #define PID_MOTOR_KI  0.07 // 0.02
@@ -90,8 +88,6 @@ typedef struct angleSetpoint_s {
 	float yaw;
 }angleSetpoint_t;
 
-extern outRates_t motor_setpoints;
-extern rateSetpoint_t desired_rate;
 
 void motorMixerInit();
 void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRate, float32_t* currentAccel, quaternion_t attitude);
