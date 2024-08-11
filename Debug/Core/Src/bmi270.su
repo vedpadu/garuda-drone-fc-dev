@@ -1,11 +1,11 @@
 ../Core/Src/bmi270.c:15:6:cs_low	8	static
 ../Core/Src/bmi270.c:18:6:cs_high	8	static
-../Core/Src/bmi270.c:22:6:BMI270ReadData	8	static
-../Core/Src/bmi270.c:29:9:getCAS	16	static
-../Core/Src/bmi270.c:44:6:BMI270Init	8	static
-../Core/Src/bmi270.c:73:6:configureBMI270	8	static
-../Core/Src/bmi270.c:88:6:configureBMI270EXTI	8	static
-../Core/Src/bmi270.c:96:6:bmi270EnableSPI	8	static
+../Core/Src/bmi270.c:22:6:bmi270_read_data	8	static
+../Core/Src/bmi270.c:29:9:bmi270_get_CAS	16	static
+../Core/Src/bmi270.c:44:6:bmi270_init	8	static
+../Core/Src/bmi270.c:73:6:bmi270_configure_settings	8	static
+../Core/Src/bmi270.c:88:6:bmi270_configure_EXTI	8	static
+../Core/Src/bmi270.c:96:6:bmi270_enable_SPI	8	static
 ../Core/Src/bmi270.c:104:9:read_register	16	static
 ../Core/Src/bmi270.c:114:6:write_register	24	static
 ../Core/Src/bmi270.c:121:10:burst_read	24	static

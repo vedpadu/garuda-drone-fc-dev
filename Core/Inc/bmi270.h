@@ -11,11 +11,11 @@
 #define CS_Pin_BMI270 SPI1_CS_Pin
 #define CS_GPIO_Port_BMI270 GPIOA
 
-extern uint8_t spiWorking;
-extern uint8_t initWorking;
-extern uint8_t bmiReady;
+extern uint8_t bmi270_spi_working;
+extern uint8_t bmi270_init_working;
+extern uint8_t bmi270_ready;
 extern int countGyros;
-extern uint8_t bmi270_data_spi_buf[14];
+extern uint8_t bmi270_data_read_buf[14];
 #define hspi_bmi270 (&hspi1)
 #define exti_tim (&htim5)
 
@@ -72,13 +72,13 @@ void burst_transmit(uint8_t* transmit_buf, uint32_t timeout, uint16_t size);
 void cs_high();
 void cs_low();
 
-void BMI270ReadData();
-int16_t getCAS();
+void bmi270_read_data();
+int16_t bmi270_get_CAS();
 
-void BMI270Init();
-void configureBMI270();
-void configureBMI270EXTI();
-void bmi270EnableSPI();
+void bmi270_init();
+void bmi270_configure_settings();
+void bmi270_configure_EXTI();
+void bmi270_enable_SPI();
 
 float lsb_to_mps2(int16_t val, float g_range, uint8_t bit_width);
 float lsb_to_dps(int16_t val, float dps, uint8_t bit_width);

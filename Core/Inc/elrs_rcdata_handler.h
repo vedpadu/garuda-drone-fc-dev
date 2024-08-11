@@ -7,8 +7,8 @@
  *      Author: vedpadu
  */
 
-#ifndef INC_ELRSTORCDATA_H_
-#define INC_ELRSTORCDATA_H_
+#ifndef INC_ELRS_RCDATA_HANDLER_H_
+#define INC_ELRS_RCDATA_HANDLER_H_
 
 #include "stdint.h"
 #include "math.h"
@@ -21,4 +21,4 @@ void unpackAnalogChannelData(uint16_t *rcData, volatile elrsOtaPacket_t const * 
 void hybridWideNonceToSwitchIndex(const uint8_t nonce);
 
 
-#endif /* INC_ELRSTORCDATA_H_ */
+#endif /* INC_ELRS_RCDATA_HANDLER_H_ */

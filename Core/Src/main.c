@@ -17,6 +17,8 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+#include <flash_memory_handler.h>
+#include <motor_mixer.h>
 #include "main.h"
 #include "dma.h"
 #include "spi.h"
@@ -32,11 +34,9 @@
 #include "imu.h"
 #include "expresslrs.h"
 #include "sx1280.h"
-#include "flashMemoryConfig.h"
 #include "esc.h"
 #include "arm_math.h"
 #include "kalman.h"
-#include "motorMixer.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -75,7 +75,6 @@ uint16_t rcData[8] = {0,0,0,0,0,0,0,0};
 
 int countMicros = 0;
 int countMicroTemp = 0;
-int packetArrived = 0;
 int countMotor = 0;
 
 uint16_t mot_buf[4] = {0};
@@ -101,7 +100,7 @@ void dispImuAndPID(float32_t* gyr, float32_t* acc, outRates_t pidRate, uint16_t*
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	if (htim == &htim5) {
 		if(!armed){
-			armESC();
+			arm_ESC();
 		}else{
 			float32_t currTick = micros();
 			  float32_t deltTime = (float32_t)(getDeltaTime(currTick, lastKalmanTick)) * 0.000001;
@@ -125,25 +124,24 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 		  clockPhaseUpdate(0);
 		  doFhssIrq();
 	  }else if(htim == &htim10){
-		  if(bmiReady && kalman_initialized){
+		  if(bmi270_ready && kalman_initialized){
 			  motorCount++;
-			  if(packetArrived){
+			  if(!isDisconnected()){
 				  // fast loop, gets inputs and does rate control
 				  //TODO: inputs do not have to be here
 				  expressLrsSetRcDataFromPayload(rcData);
 				  motorMixerUpdate(rcData, mot_buf, gyro, accel, estimate);
-				  setMotorOutputs(mot_buf);
+				  set_esc_outputs(mot_buf);
 
 			  }
 		  }
 	  }else if(htim == &htim11){
-		  if(bmiReady && kalman_initialized){
+		  if(bmi270_ready && kalman_initialized){
 			  readIMUData();
 			  gyroCtr++;
 		  }
-
 	  }else if(htim == &htim3){
-		  if(bmiReady && kalman_initialized){
+		  if(bmi270_ready && kalman_initialized){
 			  //displayInts4("rc0", rcData[0], "rc1", rcData[1], "rc2", rcData[2], "rc3", rcData[3]);
 
 				//displayFloats4("00", estimate.w, "01", estimate.vec[0], "02", estimate.vec[1], "03", estimate.vec[2]);
@@ -158,7 +156,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 			  	//displayFloats4("gyro", (float)countGyros, "motorUpdate", gyro[0], "kalman", gyroPreFilt[0], "delta", (float)(getDeltaTime(currTime, lastTimePrint))/1000);
 				//displayInts4("gyro", gyroCtr, "motorUpdate", motorCount, "kalman", kalmanCtr, "delta", (getDeltaTime(currTime, lastTimePrint))/1000);
 				lastTimePrint = currTime;
-				if(spiWorking){
+				if(bmi270_spi_working){
 					HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
 				}
 
@@ -175,10 +173,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	  // switch to a function in the class
 	  // atleast use interrupt mode man..
 	  setLastPacketTime(micros());
-	  sx1280ReadPeriodic(radioDmaBuffer);
+	  sx1280_read_interrupt(radioDmaBuffer);
 
 	  processRFPacket((uint8_t *)radioDmaBuffer, micros());
-	  packetArrived = 1;
 
   } else if(GPIO_Pin == GPIO_PIN_2){
 	  // add erase flash sector functionality on multiple presses as well as clearing bind mode

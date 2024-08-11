@@ -1,5 +1,7 @@
-Core/Src/expresslrs.o: ../Core/Src/expresslrs.c ../Core/Inc/expresslrs.h \
- ../Core/Inc/sx1280.h ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h \
+Core/Src/expresslrs.o: ../Core/Src/expresslrs.c \
+ ../Core/Inc/elrs_rcdata_handler.h ../Core/Inc/expresslrs.h \
+ ../Core/Inc/flash_memory_handler.h ../Core/Inc/main.h \
+ ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h \
  ../Core/Inc/stm32f4xx_hal_conf.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_def.h \
@@ -30,10 +32,10 @@ Core/Src/expresslrs.o: ../Core/Src/expresslrs.c ../Core/Inc/expresslrs.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_usb.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd_ex.h \
- ../Core/Inc/main.h ../Middlewares/ST/ARM/DSP/Inc/arm_math.h \
+ ../Middlewares/ST/ARM/DSP/Inc/arm_math.h \
  ../Drivers/CMSIS/Include/cmsis_compiler.h ../Core/Inc/kalman.h \
- ../Core/Inc/math_util.h ../Core/Inc/expresslrs.h \
- ../Core/Inc/flashMemoryConfig.h ../USB_DEVICE/App/usbd_cdc_if.h \
+ ../Core/Inc/math_util.h ../Core/Inc/sx1280.h ../Core/Inc/expresslrs.h \
+ ../USB_DEVICE/App/usbd_cdc_if.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc/usbd_cdc.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h \
@@ -41,9 +43,11 @@ Core/Src/expresslrs.o: ../Core/Src/expresslrs.c ../Core/Inc/expresslrs.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h \
- ../Core/Inc/elrsToRcData.h ../Core/Inc/math_util.h
+ ../Core/Inc/math_util.h
+../Core/Inc/elrs_rcdata_handler.h:
 ../Core/Inc/expresslrs.h:
-../Core/Inc/sx1280.h:
+../Core/Inc/flash_memory_handler.h:
+../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:
@@ -75,13 +79,12 @@ Core/Src/expresslrs.o: ../Core/Src/expresslrs.c ../Core/Inc/expresslrs.h \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_usb.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd_ex.h:
-../Core/Inc/main.h:
 ../Middlewares/ST/ARM/DSP/Inc/arm_math.h:
 ../Drivers/CMSIS/Include/cmsis_compiler.h:
 ../Core/Inc/kalman.h:
 ../Core/Inc/math_util.h:
+../Core/Inc/sx1280.h:
 ../Core/Inc/expresslrs.h:
-../Core/Inc/flashMemoryConfig.h:
 ../USB_DEVICE/App/usbd_cdc_if.h:
 ../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc/usbd_cdc.h:
 ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h:
@@ -91,5 +94,4 @@ Core/Src/expresslrs.o: ../Core/Src/expresslrs.c ../Core/Inc/expresslrs.h \
 ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h:
 ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h:
 ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h:
-../Core/Inc/elrsToRcData.h:
 ../Core/Inc/math_util.h:

@@ -1,3 +1,3 @@
-../Core/Src/esc.c:24:6:armESC	13
-../Core/Src/esc.c:86:6:setMotorOutputs	3
-../Core/Src/esc.c:99:6:dshot600	4
+../Core/Src/esc.c:24:6:arm_ESC	13
+../Core/Src/esc.c:87:6:set_esc_outputs	3
+../Core/Src/esc.c:100:6:dshot600	4

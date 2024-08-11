@@ -5,7 +5,7 @@
  *  Created on: Jul 23, 2024
  *      Author: vedpadu
  */
-#include "elrsToRcData.h"
+#include <elrs_rcdata_handler.h>
 
 uint8_t wideSwitchIndex = 0; // necessary?
 

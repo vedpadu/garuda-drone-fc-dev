@@ -14,14 +14,14 @@ float32_t accel_biases[3] = {(float32_t)0.295/9.8, (float32_t)-0.032/9.8, (float
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi){
 	if(hspi == hspi_bmi270){
 		cs_high();
-		uint16_t accelXBin = ((uint16_t)bmi270_data_spi_buf[3]) << 8 | bmi270_data_spi_buf[2];
-		uint16_t accelYBin = ((uint16_t)bmi270_data_spi_buf[5]) << 8 | bmi270_data_spi_buf[4];
-		uint16_t accelZBin = ((uint16_t)bmi270_data_spi_buf[7]) << 8 | bmi270_data_spi_buf[6];
-		uint16_t gyroXBin = ((uint16_t)bmi270_data_spi_buf[9]) << 8 | bmi270_data_spi_buf[8];
-		uint16_t gyroYBin = ((uint16_t)bmi270_data_spi_buf[11]) << 8 | bmi270_data_spi_buf[10];
-		uint16_t gyroZBin = ((uint16_t)bmi270_data_spi_buf[13]) << 8 | bmi270_data_spi_buf[12];
+		uint16_t accelXBin = ((uint16_t)bmi270_data_read_buf[3]) << 8 | bmi270_data_read_buf[2];
+		uint16_t accelYBin = ((uint16_t)bmi270_data_read_buf[5]) << 8 | bmi270_data_read_buf[4];
+		uint16_t accelZBin = ((uint16_t)bmi270_data_read_buf[7]) << 8 | bmi270_data_read_buf[6];
+		uint16_t gyroXBin = ((uint16_t)bmi270_data_read_buf[9]) << 8 | bmi270_data_read_buf[8];
+		uint16_t gyroYBin = ((uint16_t)bmi270_data_read_buf[11]) << 8 | bmi270_data_read_buf[10];
+		uint16_t gyroZBin = ((uint16_t)bmi270_data_read_buf[13]) << 8 | bmi270_data_read_buf[12];
 
-		int16_t gyro_cas = getCAS();
+		int16_t gyro_cas = bmi270_get_CAS();
 		int16_t gyroXSigned = (int16_t)gyroXBin;
 		int16_t gyroZSigned = (int16_t)gyroZBin;
 		gyroXSigned = gyroXSigned - (int16_t)(((int32_t) gyro_cas * (int32_t) gyroZSigned) / 512);
@@ -51,13 +51,13 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi){
 
 void IMUInit()
 {
-	BMI270Init();
+	bmi270_init();
 	biquadLPFInit(&gyro_biquad_filt, 30.0, 500.0);
 	biquadLPFInit(&accel_biquad_filt, 10.0, 500.0);
 }
 
 void readIMUData()
 {
-	BMI270ReadData();
+	bmi270_read_data();
 }
 

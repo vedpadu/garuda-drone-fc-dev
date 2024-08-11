@@ -6,7 +6,7 @@
  *      Author: vedpadu
  */
 
-#include "outputHandler.h"
+#include <output_handler.h>
 
 outRates_t oldRates = {0.0, 0.0, 0.0};
 float32_t oldRateOfChange[3] = {0.0};

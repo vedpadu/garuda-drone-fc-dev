@@ -8,7 +8,7 @@
  *      Author: vedpa
  */
 
-#include "flashMemoryConfig.h"
+#include <flash_memory_handler.h>
 
 uint32_t *initSectorPtr = (uint32_t*)0x08060000;
 uint32_t *finalSectorPtr = (uint32_t*)0x0807FFFC;

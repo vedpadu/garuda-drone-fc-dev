@@ -1,5 +1,0 @@
-../Core/Src/flashMemoryConfig.c:21:9:initFlashMemoryConfig	2
-../Core/Src/flashMemoryConfig.c:36:6:readCurrentConfig	7
-../Core/Src/flashMemoryConfig.c:60:6:writeNewConfig	3
-../Core/Src/flashMemoryConfig.c:75:6:getFirstFreeAddress	2
-../Core/Src/flashMemoryConfig.c:83:6:eraseFlashSector	1

@@ -20,8 +20,8 @@ motorPWMTim_t motorPWMTims[4] = {
 		{ 3, &htim2, TIM_CHANNEL_1, &hdma_tim2_ch1 }, // red black // + pitch - roll
 		};
 
-// deals with the initialization as well as the motor setting
-void armESC() {
+// deals with the initialization of the ESC
+void arm_ESC() {
 	arming_ctr++;
 	// wait power up
 	if (arming_ctr % MOTOR_COUNT == 0) {
@@ -83,7 +83,8 @@ void armESC() {
 	}
 }
 
-void setMotorOutputs(uint16_t *desiredOut) {
+// sends motor values to dma streams and performs dshot
+void set_esc_outputs(uint16_t *desiredOut) {
 	if (armed) {
 		memcpy(motor_outputs, desiredOut, MOTOR_COUNT * sizeof(uint16_t));
 		int i;

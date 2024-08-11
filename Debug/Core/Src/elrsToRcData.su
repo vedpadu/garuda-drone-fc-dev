@@ -1,5 +1,0 @@
-../Core/Src/elrsToRcData.c:24:6:unpackChannelDataHybridWide	32	static
-../Core/Src/elrsToRcData.c:42:6:unpackAnalogChannelData	40	static
-../Core/Src/elrsToRcData.c:66:10:convertSwitch1b	16	static
-../Core/Src/elrsToRcData.c:71:10:convertSwitchNb	16	static
-../Core/Src/elrsToRcData.c:76:6:hybridWideNonceToSwitchIndex	16	static

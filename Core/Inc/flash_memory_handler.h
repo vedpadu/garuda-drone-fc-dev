@@ -5,8 +5,8 @@
  *      Author: vedpa
  */
 
-#ifndef INC_FLASHMEMORYCONFIG_H_
-#define INC_FLASHMEMORYCONFIG_H_
+#ifndef INC_FLASH_MEMORY_HANDLER_H_
+#define INC_FLASH_MEMORY_HANDLER_H_
 
 #include "main.h"
 
@@ -17,4 +17,4 @@ void readCurrentConfig(uint8_t* out);
 void writeNewConfig(uint8_t* in);
 
 
-#endif /* INC_FLASHMEMORYCONFIG_H_ */
+#endif /* INC_FLASH_MEMORY_HANDLER_H_ */

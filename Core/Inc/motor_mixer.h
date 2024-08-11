@@ -7,19 +7,20 @@
  *      Author: vedpadu
  */
 
-#ifndef INC_MOTORMIXER_H_
-#define INC_MOTORMIXER_H_
+#ifndef INC_MOTOR_MIXER_H_
+#define INC_MOTOR_MIXER_H_
 
 #include "pid.h"
 #include "math_util.h"
 #include "expresslrs.h"
 #include "esc.h"
 
-extern float32_t eulerAttitude[3];
+extern float32_t current_euler_attitude[3];
 
-#define PID_KP  0.05 // maybe raise this? //0.028 // 0.045
-#define PID_KI  0.07 // 0.02
-#define PID_KD  0.0055 //0.023 //0.16 // 0.0045
+// pid constants
+#define PID_MOTOR_KP  0.05 // maybe raise this? //0.028 // 0.045
+#define PID_MOTOR_KI  0.07 // 0.02
+#define PID_MOTOR_KD  0.0055 //0.023 //0.16 // 0.0045
 
 #define PID_RATE_KP  3.5
 #define PID_RATE_KI  0.0// 0.5
@@ -29,30 +30,37 @@ extern float32_t eulerAttitude[3];
 #define PID_THROTTLE_KI  0.0
 #define PID_THROTTLE_KD  0.0 // 0.01
 
-#define PID_THROTTLE_LIM_MIN -1.0
-#define PID_THROTTLE_LIM_MAX  1.0
 
-#define PID_THROTTLE_LIM_MIN_INT -0.01
-#define PID_THROTTLE_LIM_MAX_INT  0.01
+// max outputs for pid controllers
+#define PID_MOTOR_LIM_MIN -1.0
+#define PID_MOTOR_LIM_MAX  1.0
 
 #define PID_RATE_LIM_MIN -10.0
 #define PID_RATE_LIM_MAX  10.0
 
+#define PID_THROTTLE_LIM_MIN -1.0
+#define PID_THROTTLE_LIM_MAX  1.0
+
+
+// integral limiting for pid controllers
+#define PID_MOTOR_LIM_MIN_INT -0.01
+#define PID_MOTOR_LIM_MAX_INT  0.01
+
 #define PID_RATE_LIM_MIN_INT -0.2
 #define PID_RATE_LIM_MAX_INT  0.2
 
-#define PID_TAU 0.01 //0.1 // too high? // 0.15
+#define PID_THROTTLE_LIM_MIN_INT -0.01
+#define PID_THROTTLE_LIM_MAX_INT  0.01
+
+
+// low pass filter constants + sample times
+#define PID_MOTOR_TAU 0.01
 #define PID_RATE_TAU 0.005
 #define PID_THROTTLE_TAU 0.01
 
-#define PID_LIM_MIN -1.0
-#define PID_LIM_MAX  1.0
+#define SAMPLE_TIME_INNER 0.002
+#define SAMPLE_TIME_OUTER 0.01
 
-#define PID_LIM_MIN_INT -0.017
-#define PID_LIM_MAX_INT  0.017
-
-#define SAMPLE_TIME_S 0.002
-#define SAMPLE_TIME_KALMAN 0.01
 
 #define DEADBAND 20
 
@@ -82,17 +90,18 @@ typedef struct angleSetpoint_s {
 	float yaw;
 }angleSetpoint_t;
 
-extern outRates_t motorSetpoints;
-extern rateSetpoint_t desiredRate;
+extern outRates_t motor_setpoints;
+extern rateSetpoint_t desired_rate;
 
 void motorMixerInit();
 void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRate, float32_t* currentAccel, quaternion_t attitude);
-void getRCInputs(uint16_t* rcData);
+void handleRCInputs(uint16_t* rcData);
 void getMotorOutputs(outRates_t set, uint16_t* motorOut);
+void findHoverThrottle(quaternion_t attitude, float32_t* currentAccel);
 
 void achieveDesiredRates(float32_t* currentRate);
 void getDesiredRates(float32_t* eulerAtt);
 void motorMixerOuterUpdate(quaternion_t attitude, float32_t* accel);
 void getDesiredThrottle(float32_t dotTarget, quaternion_t attitude, float32_t* accel);
 
-#endif /* INC_MOTORMIXER_H_ */
+#endif /* INC_MOTOR_MIXER_H_ */

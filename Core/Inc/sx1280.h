@@ -32,6 +32,10 @@ typedef enum {
 	SX1280_SET_PACKET_PARAMS = 0x8C,
 	SX1280_SET_DIO_IRQ_PARAMS = 0x8D,
 	SX1280_SET_RX_MODE = 0x82,
+	SX1280_CLEAR_INTERRUPTS = 0x97,
+	SX1280_GET_PACKET_POINTER = 0x17,
+	SX1280_GET_RX_DATA = 0x1B,
+	SX1280_GET_STATUS = 0xC0,
 } sx1280Command_e;
 
 typedef enum{
@@ -65,22 +69,22 @@ typedef enum{
 	LORA_IQ_STD = 0x40,
 } sx1280LORAPacketParams_e;
 
-void initSX1280();
+void sx1280_init();
 
-void writeRFFrequency(uint32_t freq);
-void sendSPIBuffer(uint8_t* buf, uint8_t size);
-void setPacketTypeLORA();
-void setStandby();
-void configureInterrupts();
-void setHighPower();
-void setRXModeNoTimeout();
-uint8_t readRegister(uint16_t reg);
-void writeRegister(uint16_t reg, uint8_t data);
-void setLORAModParameters(sx1280LORAModParams_e sF, sx1280LORAModParams_e bW, sx1280LORAModParams_e cR);
-void setLORAPacketParameters(uint8_t preambleLen, sx1280LORAPacketParams_e headerType, uint8_t payloadLen, sx1280LORAPacketParams_e crcEnabled, sx1280LORAPacketParams_e invertIQ);
-void setRFRate(sx1280LORAModParams_e sF, sx1280LORAModParams_e bW, sx1280LORAModParams_e cR, uint8_t preambleLen, uint32_t freqReg, uint8_t isInverted);
-uint8_t sx1280PollBusy();
-uint8_t getStatus();
-void sx1280ReadPeriodic(uint8_t* out);
+void sx1280_write_RF_frequency(uint32_t freq);
+void sx1280_send_SPI_buffer(uint8_t* buf, uint8_t size);
+void sx1280_set_packet_type_LORA();
+void sx1280_set_standby();
+void sx1280_configure_EXTI();
+void sx1280_set_high_power();
+void sx1280_set_RX_mode_no_timeout();
+uint8_t sx1280_read_register(uint16_t reg);
+void sx1280_write_register(uint16_t reg, uint8_t data);
+void sx1280_set_LORA_mod_parameters(sx1280LORAModParams_e sF, sx1280LORAModParams_e bW, sx1280LORAModParams_e cR);
+void sx1280_set_LORA_packet_parameters(uint8_t preambleLen, sx1280LORAPacketParams_e headerType, uint8_t payloadLen, sx1280LORAPacketParams_e crcEnabled, sx1280LORAPacketParams_e invertIQ);
+void sx1280_set_RF_rate(sx1280LORAModParams_e sF, sx1280LORAModParams_e bW, sx1280LORAModParams_e cR, uint8_t preambleLen, uint32_t freqReg, uint8_t isInverted);
+uint8_t sx1280_poll_busy();
+uint8_t sx1280_get_status();
+void sx1280_read_interrupt(uint8_t* out);
 
 #endif /* INC_SX1280_H_ */

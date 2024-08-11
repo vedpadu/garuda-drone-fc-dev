@@ -33,8 +33,8 @@ typedef struct motorPWMTim_s {
 	DMA_HandleTypeDef* dma;
 } motorPWMTim_t;
 
-void armESC();
+void arm_ESC();
 void dshot600(uint32_t *motor, uint16_t value);
-void setMotorOutputs(uint16_t* desiredOut);
+void set_esc_outputs(uint16_t* desiredOut);
 
 #endif /* INC_ESC_H_ */

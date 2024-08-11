@@ -4,11 +4,11 @@
  *  Created on: Jul 18, 2024
  *      Author: vedpa
  */
+#include <elrs_rcdata_handler.h>
 #include "expresslrs.h"
 #include <string.h>
 #include "stdlib.h"
 #include "usbd_cdc_if.h"
-#include "elrsToRcData.h"
 #include "math_util.h"
 // TODO: deal with debug imports
 
@@ -99,21 +99,11 @@ void clockPhaseUpdate(uint32_t timeMicros){
 	}
 }
 
-//void elrsSetRcDataFromPayload(uint16_t *rcData, uint8_t *payload){
-//	volatile elrsOtaPacket_t * const otaPktPtr = (elrsOtaPacket_t * const) payload;
-//	unpackChannelDataHybridWide(rcData, otaPktPtr);
-//	//receiver.switchMode == 0 ? unpackChannelDataHybridWide(rcData, otaPktPtr) : unpackChannelDataHybridSwitch8(rcData, otaPktPtr);
-//}
-
 uint8_t isDisconnected(){
 	if(receiver.connected == ELRS_DISCONNECTED){
 		return 1;
 	}
 	return 0;
-}
-
-int32_t getOffset(){
-	return phaseLocker.offset;
 }
 
 // deals with frequency hopping and LORA params
@@ -132,8 +122,8 @@ void refreshExpressLRS(uint8_t newIndex){
 	phaseLocker.rawPhaseDiff = 0;
 
 	receiver.currentFreq = fhssGetInitialFreq();
-	initSX1280();
-	//writeRFFrequency(receiver.currentFreq);
+	sx1280_init();
+
 	changeRateIndex(newIndex, receiver.currentFreq, UID[5]);
 }
 
@@ -156,9 +146,6 @@ void processRFPacket(uint8_t* packet, uint32_t timeMicros){
 	    		hybridWideNonceToSwitchIndex(receiver.nonceRX);
 	    	}
 	    	memcpy((uint8_t *) rcPayload, (uint8_t *) packet, 8);
-	    	//displayInts4("nonceRx", receiver.nonceRX, "fhssInd", fhssIndex, "time", timeMicros, "phase", phaseLocker.rawPhaseDiff);
-		    //char* data2 = "RC\n";
-		    //CDC_Transmit_FS((uint8_t *)data2, strlen(data2));
 		    break;
 	    case ELRS_MSP_DATA_PACKET:
 	    	//displayInts4("nonceRx", receiver.nonceRX, "fhssInd", fhssIndex, "time", timeMicros, "phase", phaseLocker.rawPhaseDiff);
@@ -167,17 +154,10 @@ void processRFPacket(uint8_t* packet, uint32_t timeMicros){
 			    processBindPacket(packy);
 			    char* data4 = "BIND PACK\n";
 			    CDC_Transmit_FS((uint8_t *)data4, strlen(data4));
-			    //char* data5 = convert(&packy[0]);
-			    //CDC_Transmit_FS((uint8_t *)data5, strlen(data5));
-			    //unpackBindPacket((uint8_t *) &otaPktPtr->msp_ul.payload[1]); //onELRSBindMSP
-			    //return;
 		    }
 		    break;
 	    default:
-	    	//displayInts4("nonceRx", receiver.nonceRX, "fhssInd", fhssIndex, "time", timeMicros, "phase", phaseLocker.rawPhaseDiff);
 	    	break;
-		   // char* data3 = "MSP\n";
-		    //CDC_Transmit_FS((uint8_t *)data3, strlen(data3));
 	}
 
 }
@@ -200,7 +180,7 @@ void disconnect(uint32_t timeMicros){
 	phaseLocker.rawPhaseDiff = 0;
 
 	receiver.currentFreq = fhssGetInitialFreq();
-	writeRFFrequency(receiver.currentFreq);
+	sx1280_write_RF_frequency(receiver.currentFreq);
 }
 
 void processBindPacket(uint8_t* packet){
@@ -240,11 +220,9 @@ uint8_t processSyncPacket(elrsOtaPacket_t * const otaPktPtr, uint32_t timeMicros
 	if(needToWriteConfig){
 		writeCurrentConfigsToFlash();
 	}
-	//displayInts4("syncFhss", otaPktPtr->sync.fhssIndex, "fhss", fhssIndex, "syncNonce", otaPktPtr->sync.nonce, "time", timeMicros);
-	// TODO: write connection establishing logic for the rf searching
+
 	if (receiver.nonceRX != otaPktPtr->sync.nonce || fhssIndex != otaPktPtr->sync.fhssIndex || receiver.connected == ELRS_DISCONNECTED) {
 		fhssIndex = (otaPktPtr->sync.fhssIndex) % seqCount;
-		//displayInts3("nonce", otaPktPtr->sync.nonce, "nonceRX", receiver.nonceRX, "time", phaseLocker.rawPhaseDiff);
 		receiver.nonceRX = otaPktPtr->sync.nonce;
 
 		tentativeConnection(timeMicros);
@@ -270,27 +248,11 @@ void initExpressLRS(){
 	receiver.rateIndex = 1; // TEMP
 	receiver.switchMode = initConfigs[7];
 
-	//initSX1280(); // move to main??
-
 	if(UID[0] == 0 && UID[1] == 0 && UID[2] == 0 && UID[3] == 0 && UID[4] == 0 && UID[5] == 0){
 		setBindingMode();
 	}else{
 		refreshExpressLRS(receiver.rateIndex);
 	}
-	//UID = BindingUID;
-	//fhssGenSequence(UID);
-}
-
-uint8_t getRateIndex(){
-	return receiver.rateIndex;
-}
-
-uint8_t getFHSSIndex(){
-	return fhssIndex;
-}
-
-uint32_t getPhaseDiff(){
-	return phaseLocker.rawPhaseDiff;
 }
 
 void changeRateIndex(uint8_t newIndex, uint32_t freq, uint8_t uid5){
@@ -298,31 +260,15 @@ void changeRateIndex(uint8_t newIndex, uint32_t freq, uint8_t uid5){
 	elrsModSettings_t newSettings = airRateConfig[receiver.rateIndex];
 	receiver.modParams = newSettings;
 	setPrescaleForRateIndex(newIndex);
-	setRFRate(newSettings.sf, newSettings.bw, newSettings.cr, newSettings.preambleLen, freq, uid5 & 0x01);
-	//setRFRate(newSettings.sf, newSettings.bw, LORA_CR_LI_4_8, 12, fhssGetInitialFreq(), 1);
-	//sx1280PollBusy();
-	//writeRFFrequency(freq);
-	//setRFRate(newSettings.sf, newSettings.bw, newSettings.cr, newSettings.preambleLen, freq, 1);
+	sx1280_set_RF_rate(newSettings.sf, newSettings.bw, newSettings.cr, newSettings.preambleLen, freq, uid5 & 0x01);
 }
 
-uint8_t doFhssIrq(){
-	receiver.nonceRX += 1;
-	uint8_t modResultFHSS = (receiver.nonceRX) % receiver.modParams.fhssHopInterval;
 
-	// TODO: make non-blocking? like betaflight
-	if((receiver.inBindingMode == 0) && modResultFHSS == 0 && receiver.connected != ELRS_DISCONNECTED){
-		receiver.currentFreq = fhssGetNextFreq();
-		writeRFFrequency(receiver.currentFreq);
-		return 1;
-	}
-	return 0;
-}
 
 void expressLrsSetRcDataFromPayload(uint16_t *rcData)
 {
 	volatile elrsOtaPacket_t * const otaPktPtr = (elrsOtaPacket_t * const) rcPayload;
 	unpackChannelDataHybridWide(rcData, otaPktPtr);
-	//rxExpressLrsSpiConfig()->switchMode == SM_WIDE ? unpackChannelDataHybridWide(rcData, otaPktPtr) : unpackChannelDataHybridSwitch8(rcData, otaPktPtr);
 }
 
 
@@ -376,6 +322,18 @@ void fhssGenSequence(const uint8_t inputUID[])
             fhssSequence[offset + rand] = temp;
         }
     }
+}
+
+uint8_t doFhssIrq(){
+	receiver.nonceRX += 1;
+	uint8_t modResultFHSS = (receiver.nonceRX) % receiver.modParams.fhssHopInterval;
+
+	if((receiver.inBindingMode == 0) && modResultFHSS == 0 && receiver.connected != ELRS_DISCONNECTED){
+		receiver.currentFreq = fhssGetNextFreq();
+		sx1280_write_RF_frequency(receiver.currentFreq);
+		return 1;
+	}
+	return 0;
 }
 
 uint32_t fhssGetInitialFreq()

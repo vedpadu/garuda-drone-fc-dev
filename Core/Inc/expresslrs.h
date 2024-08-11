@@ -8,10 +8,10 @@
 #ifndef INC_EXPRESSLRS_H_
 #define INC_EXPRESSLRS_H_
 
+#include <flash_memory_handler.h>
 #include <stdint.h>
 #include <math.h>
 #include "sx1280.h"
-#include "flashMemoryConfig.h"
 #include "main.h"
 
 #define ELRS_OTA_VERSION_ID 3
@@ -179,11 +179,7 @@ uint8_t processSyncPacket(elrsOtaPacket_t * const otaPktPtr, uint32_t timeMicros
 void processBindPacket(uint8_t* packet);
 void expressLrsSetRcDataFromPayload(uint16_t *rcData);
 
-uint8_t getRateIndex();
-uint8_t getFHSSIndex();
-uint32_t getPhaseDiff();
 uint8_t isDisconnected();
-int32_t getOffset();
 
 
 #endif /* INC_EXPRESSLRS_H_ */
