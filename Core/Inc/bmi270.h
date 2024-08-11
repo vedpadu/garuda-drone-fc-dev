@@ -65,12 +65,12 @@ typedef enum {
     BMI270_REG_CMD = 0x7E,
 } bmi270Register_e;
 
-uint8_t read_register(uint8_t rgstr, uint8_t* out_buf);
-void write_register(uint8_t rgstr, uint8_t data);
-uint8_t* burst_read(uint8_t rgstr, uint8_t* out_buf, uint16_t size, uint32_t timeout);
-void burst_transmit(uint8_t* transmit_buf, uint32_t timeout, uint16_t size);
-void cs_high();
-void cs_low();
+uint8_t bmi270_read_register(uint8_t rgstr, uint8_t* out_buf);
+void bmi270_write_register(uint8_t rgstr, uint8_t data);
+uint8_t* bmi270_burst_read(uint8_t rgstr, uint8_t* out_buf, uint16_t size, uint32_t timeout);
+void bmi270_burst_transmit(uint8_t* transmit_buf, uint32_t timeout, uint16_t size);
+void bmi270_cs_high();
+void bmi270_cs_low();
 
 void bmi270_read_data();
 int16_t bmi270_get_CAS();
@@ -80,7 +80,7 @@ void bmi270_configure_settings();
 void bmi270_configure_EXTI();
 void bmi270_enable_SPI();
 
-float lsb_to_mps2(int16_t val, float g_range, uint8_t bit_width);
-float lsb_to_dps(int16_t val, float dps, uint8_t bit_width);
+float bmi270_lsb_to_mps2(int16_t val, float g_range, uint8_t bit_width);
+float bmi270_lsb_to_dps(int16_t val, float dps, uint8_t bit_width);
 
 #endif

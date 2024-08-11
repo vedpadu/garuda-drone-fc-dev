@@ -13,7 +13,7 @@ uint16_t arming_ctr = 0;
 uint8_t do_init_throttle_down = 0;
 uint32_t motor_dshot_buffers[MOTOR_COUNT][DSHOT_FRAME_SIZE] = { { 0 } };
 uint16_t motor_outputs[MOTOR_COUNT] = { INIT_THROTTLE_MIN, INIT_THROTTLE_MIN, INIT_THROTTLE_MIN, INIT_THROTTLE_MIN };
-motorPWMTim_t motorPWMTims[4] = {
+motorPWMTim_t motor_PWM_tims[4] = {
 		{ 0, &htim4, TIM_CHANNEL_2, &hdma_tim4_ch2 }, // black red // + pitch + roll
 		{ 1, &htim2, TIM_CHANNEL_3, &hdma_tim2_ch3_up }, // black black // - pitch + roll
 		{ 2, &htim4, TIM_CHANNEL_3, &hdma_tim4_ch3 }, // red red // - pitch - roll
@@ -38,8 +38,8 @@ void arm_ESC() {
 	if (!armed) {
 		dshot600(motor_dshot_buffers[arming_ctr % MOTOR_COUNT],
 				motor_outputs[arming_ctr % MOTOR_COUNT]);
-		HAL_TIM_PWM_Start_DMA(motorPWMTims[arming_ctr % MOTOR_COUNT].tim,
-				motorPWMTims[arming_ctr % MOTOR_COUNT].channel,
+		HAL_TIM_PWM_Start_DMA(motor_PWM_tims[arming_ctr % MOTOR_COUNT].tim,
+				motor_PWM_tims[arming_ctr % MOTOR_COUNT].channel,
 				motor_dshot_buffers[arming_ctr % MOTOR_COUNT], 18);
 	}
 	if (!armed && initialization_ctr > ESC_POWER_UP_TIME + INIT_THROTTLE_MAX * 6 && arming_ctr % MOTOR_COUNT == MOTOR_COUNT - 1) {
@@ -90,7 +90,7 @@ void set_esc_outputs(uint16_t *desiredOut) {
 		int i;
 		for (i = 0; i < 4; i++) {
 			dshot600(motor_dshot_buffers[i], motor_outputs[i]);
-			HAL_TIM_PWM_Start_DMA(motorPWMTims[i].tim, motorPWMTims[i].channel,
+			HAL_TIM_PWM_Start_DMA(motor_PWM_tims[i].tim, motor_PWM_tims[i].channel,
 					motor_dshot_buffers[i], 18);
 		}
 	}

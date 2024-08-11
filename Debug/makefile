@@ -38,40 +38,40 @@ $(wildcard ../makefile.init) \
 $(wildcard ../makefile.targets) \
 
 
-BUILD_ARTIFACT_NAME := hummingbird-flight-controller
+BUILD_ARTIFACT_NAME := garuda-drone-fc
 BUILD_ARTIFACT_EXTENSION := elf
 BUILD_ARTIFACT_PREFIX :=
 BUILD_ARTIFACT := $(BUILD_ARTIFACT_PREFIX)$(BUILD_ARTIFACT_NAME)$(if $(BUILD_ARTIFACT_EXTENSION),.$(BUILD_ARTIFACT_EXTENSION),)
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXECUTABLES += \
-hummingbird-flight-controller.elf \
+garuda-drone-fc.elf \
 
 MAP_FILES += \
-hummingbird-flight-controller.map \
+garuda-drone-fc.map \
 
 SIZE_OUTPUT += \
 default.size.stdout \
 
 OBJDUMP_LIST += \
-hummingbird-flight-controller.list \
+garuda-drone-fc.list \
 
 OBJCOPY_HEX += \
-hummingbird-flight-controller.hex \
+garuda-drone-fc.hex \
 
 OBJCOPY_BIN += \
-hummingbird-flight-controller.bin \
+garuda-drone-fc.bin \
 
 
 # All Target
 all: main-build
 
 # Main-build Target
-main-build: hummingbird-flight-controller.elf secondary-outputs
+main-build: garuda-drone-fc.elf secondary-outputs
 
 # Tool invocations
-hummingbird-flight-controller.elf hummingbird-flight-controller.map: $(OBJS) $(USER_OBJS) C:\Users\vedpa\OneDrive\Desktop\hummingbird-flight-controller\STM32F411CEUX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "hummingbird-flight-controller.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\vedpa\OneDrive\Desktop\hummingbird-flight-controller\STM32F411CEUX_FLASH.ld" --specs=nosys.specs -Wl,-Map="hummingbird-flight-controller.map" -Wl,--gc-sections -static -L../Middlewares/ST/ARM/DSP/Lib --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+garuda-drone-fc.elf garuda-drone-fc.map: $(OBJS) $(USER_OBJS) C:\Users\vedpa\OneDrive\Desktop\hummingbird-flight-controller\STM32F411CEUX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "garuda-drone-fc.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\vedpa\OneDrive\Desktop\hummingbird-flight-controller\STM32F411CEUX_FLASH.ld" --specs=nosys.specs -Wl,-Map="garuda-drone-fc.map" -Wl,--gc-sections -static -L../Middlewares/ST/ARM/DSP/Lib --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -80,24 +80,24 @@ default.size.stdout: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
-hummingbird-flight-controller.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "hummingbird-flight-controller.list"
+garuda-drone-fc.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "garuda-drone-fc.list"
 	@echo 'Finished building: $@'
 	@echo ' '
 
-hummingbird-flight-controller.hex: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-objcopy  -O ihex $(EXECUTABLES) "hummingbird-flight-controller.hex"
+garuda-drone-fc.hex: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objcopy  -O ihex $(EXECUTABLES) "garuda-drone-fc.hex"
 	@echo 'Finished building: $@'
 	@echo ' '
 
-hummingbird-flight-controller.bin: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-objcopy  -O binary $(EXECUTABLES) "hummingbird-flight-controller.bin"
+garuda-drone-fc.bin: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objcopy  -O binary $(EXECUTABLES) "garuda-drone-fc.bin"
 	@echo 'Finished building: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) default.size.stdout hummingbird-flight-controller.bin hummingbird-flight-controller.elf hummingbird-flight-controller.hex hummingbird-flight-controller.list hummingbird-flight-controller.map
+	-$(RM) default.size.stdout garuda-drone-fc.bin garuda-drone-fc.elf garuda-drone-fc.hex garuda-drone-fc.list garuda-drone-fc.map
 	-@echo ' '
 
 secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST) $(OBJCOPY_HEX) $(OBJCOPY_BIN)

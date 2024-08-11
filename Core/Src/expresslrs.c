@@ -81,7 +81,6 @@ void clockPhaseUpdate(uint32_t timeMicros){
 		int32_t phaseSigned = (int32_t)phaseLocker.rawPhaseDiff;
 
 		offset = defaultInt/2 - phaseSigned; // need to be half out of phase so that the interrupts do not coliide!!
-
 		offset = constrain(offset, -defaultInt/4, defaultInt/4); // don't phase too much.
 
 		if(receiver.connected == ELRS_TENTATIVE && absInt(offset) < 50){
@@ -95,7 +94,6 @@ void clockPhaseUpdate(uint32_t timeMicros){
 			__HAL_TIM_SET_AUTORELOAD(elrs_tim, defaultInt - 1);
 		}
 		phaseLocker.offset = offset;
-
 	}
 }
 
