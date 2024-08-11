@@ -193,6 +193,16 @@ void processBindPacket(uint8_t* packet){
 	refreshExpressLRS(receiver.rateIndex);
 }
 
+void exitBindMode(){
+	receiver.inBindingMode = 0;
+	receiver.rateIndex = 1;
+	refreshExpressLRS(receiver.rateIndex);
+}
+
+uint8_t isBindingMode(){
+	return receiver.inBindingMode;
+}
+
 uint8_t processSyncPacket(elrsOtaPacket_t * const otaPktPtr, uint32_t timeMicros){
 	// Verify the first two of three bytes of the binding ID, which should always match
 	if (otaPktPtr->sync.UID3 != UID[3] || otaPktPtr->sync.UID4 != UID[4]) {

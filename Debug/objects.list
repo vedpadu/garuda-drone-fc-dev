@@ -1,6 +1,7 @@
 "./Core/Src/biquadlpf.o"
 "./Core/Src/bmi270.o"
 "./Core/Src/bmi270_config_file.o"
+"./Core/Src/button_handler.o"
 "./Core/Src/dma.o"
 "./Core/Src/elrs_rcdata_handler.o"
 "./Core/Src/esc.o"

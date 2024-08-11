@@ -70,8 +70,8 @@ all: main-build
 main-build: garuda-drone-fc.elf secondary-outputs
 
 # Tool invocations
-garuda-drone-fc.elf garuda-drone-fc.map: $(OBJS) $(USER_OBJS) C:\Users\vedpa\OneDrive\Desktop\hummingbird-flight-controller\STM32F411CEUX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "garuda-drone-fc.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\vedpa\OneDrive\Desktop\hummingbird-flight-controller\STM32F411CEUX_FLASH.ld" --specs=nosys.specs -Wl,-Map="garuda-drone-fc.map" -Wl,--gc-sections -static -L../Middlewares/ST/ARM/DSP/Lib --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+garuda-drone-fc.elf garuda-drone-fc.map: $(OBJS) $(USER_OBJS) C:\Users\vedpa\OneDrive\Desktop\garuda-drone-fc\STM32F411CEUX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "garuda-drone-fc.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\vedpa\OneDrive\Desktop\garuda-drone-fc\STM32F411CEUX_FLASH.ld" --specs=nosys.specs -Wl,-Map="garuda-drone-fc.map" -Wl,--gc-sections -static -L../Middlewares/ST/ARM/DSP/Lib --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

@@ -178,8 +178,10 @@ void disconnect(uint32_t timeMicros);
 uint8_t processSyncPacket(elrsOtaPacket_t * const otaPktPtr, uint32_t timeMicros);
 void processBindPacket(uint8_t* packet);
 void expressLrsSetRcDataFromPayload(uint16_t *rcData);
+void exitBindMode();
 
 uint8_t isDisconnected();
+uint8_t isBindingMode();
 
 
 #endif /* INC_EXPRESSLRS_H_ */

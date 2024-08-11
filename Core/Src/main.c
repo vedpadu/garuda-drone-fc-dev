@@ -37,6 +37,7 @@
 #include "esc.h"
 #include "arm_math.h"
 #include "kalman.h"
+#include "button_handler.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -156,7 +157,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 			  	//displayFloats4("gyro", (float)countGyros, "motorUpdate", gyro[0], "kalman", gyroPreFilt[0], "delta", (float)(getDeltaTime(currTime, lastTimePrint))/1000);
 				//displayInts4("gyro", gyroCtr, "motorUpdate", motorCount, "kalman", kalmanCtr, "delta", (getDeltaTime(currTime, lastTimePrint))/1000);
 				lastTimePrint = currTime;
-				if(bmi270_spi_working){
+				if(!isBindingMode()){
 					HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
 				}
 
@@ -181,7 +182,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	  // add erase flash sector functionality on multiple presses as well as clearing bind mode
 	  char* data4 = "BIND\n";
 	  CDC_Transmit_FS((uint8_t *)data4, strlen(data4));
-	  setBindingMode();
+	  processButtonPress(micros());
+
 
   } else {
       __NOP();
