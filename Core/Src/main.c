@@ -100,7 +100,7 @@ void dispImuAndPID(float32_t* gyr, float32_t* acc, outRates_t pidRate, uint16_t*
 // figure out where to put these, these are specific to the motor and the gyro.. not necessary to be here
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	if (htim == &htim5) {
-		if(!armed){
+		if(!motors_armed){
 			arm_ESC();
 		}else{
 			float32_t currTick = micros();

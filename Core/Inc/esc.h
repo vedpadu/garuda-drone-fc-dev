@@ -12,7 +12,7 @@
 #include "tim.h"
 #include "stdint.h"
 
-extern uint8_t armed;
+extern uint8_t motors_armed;
 
 // Dshot parameters
 #define MOTOR_BIT_0           7

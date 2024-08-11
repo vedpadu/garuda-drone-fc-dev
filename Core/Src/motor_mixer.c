@@ -20,6 +20,8 @@ outRates_t motor_setpoints = {0.0, 0.0, 0.0, 0.0}; // values between -1 and 1 fo
 float32_t hover_throttle = -1.0; // throttle that the drone gets close to hovering at
 float32_t last_hoverable_thrott = 0.0; // used at takeoff to find the hover throttle
 
+uint8_t drone_armed = 0;
+
 // rate to motor setpoint PIDs
 PIDController roll_motor_PID = {PID_MOTOR_KP, PID_MOTOR_KI, PID_MOTOR_KD,
 						PID_MOTOR_TAU,
