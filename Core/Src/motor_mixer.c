@@ -80,7 +80,6 @@ void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRa
 	handleRCInputs(rcData);
 	drone_armed = rc_inputs[4];
 	if(!drone_armed){
-		displayInt("j", 1);
 		int i;
 		for(i = 0;i < MOTOR_COUNT;i++){
 			motorOut[i] = 48;
