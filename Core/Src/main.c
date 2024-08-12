@@ -379,10 +379,10 @@ void displayInts3(char* desc, int val, char* desc2, int val2, char* desc3, int v
 }
 
 void displayInts4(char* desc, int val, char* desc2, int val2, char* desc3, int val3, char* desc4, int val4){
-	int len = snprintf(NULL, 0, "%s: %d %s: %u %s: %u %s: %d\n", desc, val, desc2, val2, desc3, val3, desc4, val4);
+	int len = snprintf(NULL, 0, "%s: %d %s: %d %s: %d %s: %d\n", desc, val, desc2, val2, desc3, val3, desc4, val4);
 	//int len2 = snprintf(NULL, 0, "%u", val2);
 	char *str = malloc(len + 2);
-	snprintf(str, len + 2, "%s: %d %s: %u %s: %u %s: %d\n", desc, val, desc2, val2, desc3, val3, desc4, val4);
+	snprintf(str, len + 2, "%s: %d %s: %d %s: %d %s: %d\n", desc, val, desc2, val2, desc3, val3, desc4, val4);
 	// do stuff with result
 	CDC_Transmit_FS((uint8_t*)str, strlen(str));
 	free(str);

@@ -44,6 +44,7 @@ arm_matrix_instance_f32 quatToMatrix(quaternion_t q);
 arm_matrix_instance_f32 skewSymmetric(float32_t* v);
 
 float32_t clamp(float32_t in, float32_t max, float32_t min);
+int16_t int16Clamp(int16_t in, int16_t max, int16_t min);
 float32_t absVal(float32_t val);
 int32_t absInt(int32_t val);
 

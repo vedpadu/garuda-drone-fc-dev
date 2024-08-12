@@ -87,10 +87,12 @@ void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRa
 		return;
 	}
 
-	float32_t pitchRate = (float32_t)rc_inputs[1]/125.0;
-	float32_t rollRate = (float32_t)rc_inputs[0]/125.0;
+
 	// only runs if the rate control switch is flicked
 	if(rc_inputs[5]){
+		float32_t pitchRate = (float32_t)-rc_inputs[1]/125.0;
+		float32_t rollRate = (float32_t)rc_inputs[0]/125.0;
+
 		desired_rate.ratePitch = pitchRate;
 		desired_rate.rateRoll = rollRate;
 	}
@@ -174,6 +176,8 @@ void getDesiredThrottle(float32_t dotTarget, quaternion_t attitude, float32_t* a
 
 	// TODO: tune this ctrlr
 	PIDController_Update(&throttle_PID, dotTarget, dot);
+	//displayFloats4("thrust scale", thrustScale,"hover_throttle", hover_throttle,"dotTarget", dotTarget,"thrust scale", thrustScale);
+	//displayFl("thrust scale", thrustScale);
 
 	if(hover_throttle > 0){
 		// only can help alt hold, not perfect as throttle not linearized and stuff
@@ -192,6 +196,7 @@ void getDesiredRates(float32_t* eulerAtt){
 	desired_rate.rateRoll = roll_rate_PID.out;
 	desired_rate.ratePitch = pitch_rate_PID.out;
 	desired_rate.rateYaw = yaw_rate_PID.out;
+	//displayFloats4("roll", desired_rate.rateRoll, "pitch", desired_rate.ratePitch, "yaw", desired_rate.rateYaw, "bruhge", motor_setpoints.throttle);
 }
 
 // rate to motor setpoints -> inner loop
@@ -211,21 +216,23 @@ void handleRCInputs(uint16_t* rcData){
 	int i;
 	for(i = 0;i < 4;i++){
 		if(i != 2){ // not throttle
-			rc_inputs[i] = (int16_t)rcData[i] - 1500;
+			rc_inputs[i] = ((int16_t)rcData[i]) - 1500;
 			if(rc_inputs[i] < DEADBAND && rc_inputs[i] > -DEADBAND){
 				rc_inputs[i] = 0;
 			}
 		}else{ // throttle
-			rc_inputs[i] = (int16_t)rcData[i] - 989;
+			rc_inputs[i] = ((int16_t)rcData[i]) - 989;
 			if(rc_inputs[i] < DEADBAND){
 				rc_inputs[i] = 0;
 			}
 		}
-		if(rc_inputs[i] > DEADBAND + 30){
-			rc_inputs[i] = clamp(rc_inputs[i], old_rc_inputs[i] + 30, old_rc_inputs[i] - 30);
+		if((rc_inputs[i]) > DEADBAND + 30 || rc_inputs[i] < -DEADBAND - 30){
+			rc_inputs[i] = int16Clamp(rc_inputs[i], old_rc_inputs[i] + 30, old_rc_inputs[i] - 30);
 		}
+
 		old_rc_inputs[i] = rc_inputs[i];
 	}
+	//displayInts4("rc1", rc_inputs[0], "rc2", rc_inputs[1], "rc3", rc_inputs[2], "rc4", rc_inputs[3]);
 	int j;
 	for(j = 4;j < 8;j++){
 		// converts switches to true false
@@ -241,7 +248,7 @@ void handleRCInputs(uint16_t* rcData){
 
 void getMotorOutputs(outRates_t set, uint16_t* motorOut){
 	float32_t out[MOTOR_COUNT] = {0};
-	//outputUpdate(&set); // smooth outputs
+	outputUpdate(&set); // smooth outputs
 	out[0] = (set.throttle + set.roll + set.pitch - set.yaw) * 2000;
 	out[1] = (set.throttle + set.roll - set.pitch + set.yaw) * 2000;
 	out[2] = (set.throttle - set.roll - set.pitch - set.yaw) * 2000;
