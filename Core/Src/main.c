@@ -17,8 +17,6 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-#include <flash_memory_handler.h>
-#include <motor_mixer.h>
 #include "main.h"
 #include "dma.h"
 #include "spi.h"
@@ -38,6 +36,7 @@
 #include "arm_math.h"
 #include "kalman.h"
 #include "button_handler.h"
+#include "motor_mixer.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
