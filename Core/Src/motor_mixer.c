@@ -73,13 +73,14 @@ void motorMixerInit(){
 	PIDController_Init(&throttle_PID);
 
 	// max velocity and acceleration for the motor setpoints
-	initOutputHandler(50.0 * SAMPLE_TIME_INNER, 40.0 * SAMPLE_TIME_INNER);
+	initOutputHandler(0.015, 0.1);
 }
 
 void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRate, float32_t* currentAccel, quaternion_t attitude){
 	handleRCInputs(rcData);
 	drone_armed = rc_inputs[4];
 	if(!drone_armed){
+		displayInt("j", 1);
 		int i;
 		for(i = 0;i < MOTOR_COUNT;i++){
 			motorOut[i] = 48;
@@ -91,8 +92,8 @@ void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRa
 	float32_t rollRate = (float32_t)rc_inputs[0]/125.0;
 	// only runs if the rate control switch is flicked
 	if(rc_inputs[5]){
-		desiredRate.ratePitch = pitchRate;
-		desiredRate.rateRoll = rollRate;
+		desired_rate.ratePitch = pitchRate;
+		desired_rate.rateRoll = rollRate;
 	}
 
 	float32_t throttle_target = (float32_t)rc_inputs[2]/500.0;
@@ -177,7 +178,7 @@ void getDesiredThrottle(float32_t dotTarget, quaternion_t attitude, float32_t* a
 
 	if(hover_throttle > 0){
 		// only can help alt hold, not perfect as throttle not linearized and stuff
-		motor_setpoints.throttle = dotTarget * hover_throttle * thrustScale + throttle_PID.out;
+		motor_setpoints.throttle = dotTarget * hover_throttle * thrustScale /*+ throttle_PID.out*/;
 	}else{
 		motor_setpoints.throttle = dotTarget * 0.5;
 	}
@@ -241,7 +242,7 @@ void handleRCInputs(uint16_t* rcData){
 
 void getMotorOutputs(outRates_t set, uint16_t* motorOut){
 	float32_t out[MOTOR_COUNT] = {0};
-	outputUpdate(&set); // smooth outputs
+	//outputUpdate(&set); // smooth outputs
 	out[0] = (set.throttle + set.roll + set.pitch - set.yaw) * 2000;
 	out[1] = (set.throttle + set.roll - set.pitch + set.yaw) * 2000;
 	out[2] = (set.throttle - set.roll - set.pitch - set.yaw) * 2000;

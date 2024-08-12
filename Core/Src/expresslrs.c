@@ -96,12 +96,10 @@ void clockPhaseUpdate(uint32_t timeMicros){
 		}
 		phaseLocker.offset = offset;
 	}else{
-		displayInt("heyge", receiver.nonceDisconnected);
 		receiver.nonceDisconnected++;
 		phaseLocker.lastClockTimeMicros = timeMicros;
 		phaseLocker.lastPacketTimeMicros = timeMicros;
 		if(receiver.nonceDisconnected > (airRateConfig[receiver.rateIndex].rate * 11)/10){
-			displayInt("helloge", 1);
 			receiver.rateIndex = (receiver.rateIndex + 1) % 4;
 			refreshExpressLRS(receiver.rateIndex);
 		}
@@ -149,7 +147,7 @@ void processRFPacket(uint8_t* packet, uint32_t timeMicros){
 	    		lastSync = timeMicros;
 	    	}else if(syncVal == 0){
 	    		char* test3 = "SYNC FAIL\n";
-	    		CDC_Transmit_FS((uint8_t *)test3, strlen(test3));
+	    		//CDC_Transmit_FS((uint8_t *)test3, strlen(test3));
 	    	}
 		    break;
 	    case ELRS_RC_DATA_PACKET:
@@ -247,7 +245,10 @@ uint8_t processSyncPacket(elrsOtaPacket_t * const otaPktPtr, uint32_t timeMicros
 		fhssIndex = (otaPktPtr->sync.fhssIndex) % seqCount;
 		receiver.nonceRX = otaPktPtr->sync.nonce;
 
-		tentativeConnection(timeMicros);
+		if(receiver.connected == ELRS_DISCONNECTED){
+			tentativeConnection(timeMicros);
+		}
+
 	}
 	return 1;
 }
