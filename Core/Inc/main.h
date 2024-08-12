@@ -34,6 +34,7 @@ extern "C" {
 // should prolly just include tim.h
 extern TIM_HandleTypeDef htim5;
 extern TIM_HandleTypeDef htim9;
+extern TIM_HandleTypeDef htim10;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim4;
 extern SPI_HandleTypeDef hspi1;
@@ -93,6 +94,10 @@ void Error_Handler(void);
 #define RADIO_RST_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
+#define CLOCK_FRQ 48000000
+#define KALMAN_FILTER_NVIC_PRIO 5
+#define KALMAN_FILTER_SAMPLE_RATE 100
+
 char *convert(uint8_t *a);
 void displayInt(char* desc, int val);
 void displayInts(char* desc, int val, char* desc2, int val2);

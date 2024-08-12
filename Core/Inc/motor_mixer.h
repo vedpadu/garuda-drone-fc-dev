@@ -14,6 +14,7 @@
 #include "math_util.h"
 #include "expresslrs.h"
 #include "esc.h"
+#include "main.h"
 
 // pid constants
 #define PID_MOTOR_KP  0.05 // maybe raise this? //0.028 // 0.045

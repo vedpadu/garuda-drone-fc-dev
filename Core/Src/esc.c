@@ -8,7 +8,7 @@
 #include "esc.h"
 
 uint8_t motors_armed = 0;
-uint16_t initialization_ctr = 0;
+uint16_t initialization_time = 0;
 uint16_t arming_ctr = 0;
 uint8_t do_init_throttle_down = 0;
 uint32_t motor_dshot_buffers[MOTOR_COUNT][DSHOT_FRAME_SIZE] = { { 0 } };
@@ -21,39 +21,42 @@ motorPWMTim_t motor_PWM_tims[4] = {
 		};
 
 // deals with the initialization of the ESC
+// this runs 4 times per millisecond, such that each motor will be updated each millisecond.
+// this is done so that the DMA streams do not block each other and screw up the motor initialization ( more of a precaution than a necessity)
 void arm_ESC() {
 	arming_ctr++;
+	uint8_t motor_index = arming_ctr % MOTOR_COUNT;
 	// wait power up
-	if (arming_ctr % MOTOR_COUNT == 0) {
-		if (initialization_ctr < ESC_POWER_UP_TIME) {
-			++initialization_ctr;
+	if (motor_index == 0) {
+		if (initialization_time < ESC_POWER_UP_TIME) {
+			++initialization_time;
 			return;
 		}
 	}
 
-	if (initialization_ctr < ESC_POWER_UP_TIME) {
+	if (initialization_time < ESC_POWER_UP_TIME) {
 		return;
 	}
 
 	if (!motors_armed) {
-		dshot600(motor_dshot_buffers[arming_ctr % MOTOR_COUNT],
-				motor_outputs[arming_ctr % MOTOR_COUNT]);
-		HAL_TIM_PWM_Start_DMA(motor_PWM_tims[arming_ctr % MOTOR_COUNT].tim,
-				motor_PWM_tims[arming_ctr % MOTOR_COUNT].channel,
-				motor_dshot_buffers[arming_ctr % MOTOR_COUNT], 18);
+		dshot600(motor_dshot_buffers[motor_index],
+				motor_outputs[motor_index]);
+		HAL_TIM_PWM_Start_DMA(motor_PWM_tims[motor_index].tim,
+				motor_PWM_tims[motor_index].channel,
+				motor_dshot_buffers[motor_index], DSHOT_FRAME_SIZE);
 	}
-	if (!motors_armed && initialization_ctr > ESC_POWER_UP_TIME + INIT_THROTTLE_MAX * 6 && arming_ctr % MOTOR_COUNT == MOTOR_COUNT - 1) {
+	if (!motors_armed && initialization_time > ESC_POWER_UP_TIME + INIT_THROTTLE_MAX * 6 && arming_ctr % MOTOR_COUNT == MOTOR_COUNT - 1) {
 		motors_armed = 1;
-		// convert to 100 hz low prio kalman timer. TODO: make unconstant
-		HAL_NVIC_SetPriority(TIM5_IRQn, 5, 0);
-		htim5.Instance->PSC = 4799;
+		// changes priority and prescaler to run kalman filter on the same timer
+		HAL_NVIC_SetPriority(TIM5_IRQn, KALMAN_FILTER_NVIC_PRIO, 0);
+		htim5.Instance->PSC = (CLOCK_FRQ/KALMAN_FILTER_SAMPLE_RATE/100) - 1;
 		htim5.Instance->ARR = 99;
 	}
-	if (motors_armed || arming_ctr % MOTOR_COUNT != 0) {
+	if (motors_armed || motor_index != 0) {
 		return;
 	}
 
-	++initialization_ctr;
+	++initialization_time;
 
 	// TODO: for loop
 	if (do_init_throttle_down) {
@@ -88,10 +91,10 @@ void set_esc_outputs(uint16_t *desiredOut) {
 	if (motors_armed) {
 		memcpy(motor_outputs, desiredOut, MOTOR_COUNT * sizeof(uint16_t));
 		int i;
-		for (i = 0; i < 4; i++) {
+		for (i = 0; i < MOTOR_COUNT; i++) {
 			dshot600(motor_dshot_buffers[i], motor_outputs[i]);
 			HAL_TIM_PWM_Start_DMA(motor_PWM_tims[i].tim, motor_PWM_tims[i].channel,
-					motor_dshot_buffers[i], 18);
+					motor_dshot_buffers[i], DSHOT_FRAME_SIZE);
 		}
 	}
 }

@@ -1,3 +1,4 @@
+../Core/Src/main.c:89:6:dispImuAndPID	216	static
 ../Core/Src/main.c:100:6:HAL_TIM_PeriodElapsedCallback	32	static
 ../Core/Src/main.c:169:6:HAL_GPIO_EXTI_Callback	24	static,ignoring_inline_asm
 ../Core/Src/main.c:198:5:main	24	static
