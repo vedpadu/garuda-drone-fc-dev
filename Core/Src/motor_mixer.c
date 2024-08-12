@@ -73,7 +73,7 @@ void motorMixerInit(){
 	PIDController_Init(&throttle_PID);
 
 	// max velocity and acceleration for the motor setpoints
-	initOutputHandler(0.015, 0.1);
+	initOutputHandler(0.05, 0.15);
 }
 
 void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRate, float32_t* currentAccel, quaternion_t attitude){
@@ -181,7 +181,7 @@ void getDesiredThrottle(float32_t dotTarget, quaternion_t attitude, float32_t* a
 
 	if(hover_throttle > 0){
 		// only can help alt hold, not perfect as throttle not linearized and stuff
-		motor_setpoints.throttle = dotTarget * hover_throttle * thrustScale /*+ throttle_PID.out*/;
+		motor_setpoints.throttle = dotTarget * hover_throttle * thrustScale + throttle_PID.out;
 	}else{
 		motor_setpoints.throttle = dotTarget * 0.5;
 	}
@@ -248,7 +248,7 @@ void handleRCInputs(uint16_t* rcData){
 
 void getMotorOutputs(outRates_t set, uint16_t* motorOut){
 	float32_t out[MOTOR_COUNT] = {0};
-	outputUpdate(&set); // smooth outputs
+	//outputUpdate(&set); // smooth outputs
 	out[0] = (set.throttle + set.roll + set.pitch - set.yaw) * 2000;
 	out[1] = (set.throttle + set.roll - set.pitch + set.yaw) * 2000;
 	out[2] = (set.throttle - set.roll - set.pitch - set.yaw) * 2000;

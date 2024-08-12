@@ -1,3 +1,0 @@
-../Core/Src/imu.c:14:6:HAL_SPI_TxRxCpltCallback	40	static
-../Core/Src/imu.c:52:6:IMUInit	8	static
-../Core/Src/imu.c:59:6:readIMUData	8	static

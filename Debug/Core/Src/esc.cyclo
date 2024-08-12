@@ -1,3 +1,0 @@
-../Core/Src/esc.c:26:6:arm_ESC	13
-../Core/Src/esc.c:90:6:set_esc_outputs	3
-../Core/Src/esc.c:103:6:dshot600	4

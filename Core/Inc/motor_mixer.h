@@ -25,7 +25,7 @@
 #define PID_RATE_KI  0.0// 0.5
 #define PID_RATE_KD  -0.4
 
-#define PID_THROTTLE_KP  0.05 // 0.1
+#define PID_THROTTLE_KP  0.0 // 0.1
 #define PID_THROTTLE_KI  0.0
 #define PID_THROTTLE_KD  0.0 // 0.01
 
@@ -42,8 +42,8 @@
 
 
 // integral limiting for pid controllers
-#define PID_MOTOR_LIM_MIN_INT -0.01
-#define PID_MOTOR_LIM_MAX_INT  0.01
+#define PID_MOTOR_LIM_MIN_INT -0.005
+#define PID_MOTOR_LIM_MAX_INT  0.005
 
 #define PID_RATE_LIM_MIN_INT -0.2
 #define PID_RATE_LIM_MAX_INT  0.2
@@ -58,7 +58,7 @@
 #define PID_THROTTLE_TAU 0.01
 
 #define SAMPLE_TIME_INNER 0.002
-#define SAMPLE_TIME_OUTER 0.01
+#define SAMPLE_TIME_OUTER (1.0 / KALMAN_FILTER_SAMPLE_RATE)
 
 
 #define DEADBAND 20

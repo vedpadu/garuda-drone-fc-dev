@@ -272,7 +272,7 @@ int16_t int16Clamp(int16_t in, int16_t max, int16_t min){
 	return in;
 }
 
-float32_t clamp(float32_t in, float32_t max, float32_t min){
+float32_t float32Clamp(float32_t in, float32_t max, float32_t min){
 	if(in > max){
 		in = max;
 	}

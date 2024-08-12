@@ -20,9 +20,9 @@ void initOutputHandler(float32_t maxVel, float32_t maxAccel){
 }
 
 void outputUpdate(outRates_t* out){
-	out->roll = clamp(out->roll, oldRates.roll + maxVelocity, oldRates.roll - maxVelocity);
-	out->pitch = clamp(out->pitch, oldRates.pitch + maxVelocity, oldRates.pitch - maxVelocity);
-	out->yaw = clamp(out->yaw, oldRates.yaw + maxVelocity, oldRates.yaw - maxVelocity);
+	out->roll = float32Clamp(out->roll, oldRates.roll + maxVelocity, oldRates.roll - maxVelocity);
+	out->pitch = float32Clamp(out->pitch, oldRates.pitch + maxVelocity, oldRates.pitch - maxVelocity);
+	out->yaw = float32Clamp(out->yaw, oldRates.yaw + maxVelocity, oldRates.yaw - maxVelocity);
 
 
 	float32_t currentRateOfChange[3] = {0.0};
@@ -37,15 +37,15 @@ void outputUpdate(outRates_t* out){
 	}
 
 	if(absVal(diff[0]) > maxAcceleration){
-		currentRateOfChange[0] = oldRateOfChange[0] + clamp(diff[0], maxAcceleration, -maxAcceleration);
+		currentRateOfChange[0] = oldRateOfChange[0] + float32Clamp(diff[0], maxAcceleration, -maxAcceleration);
 		out->roll = oldRates.roll + currentRateOfChange[0];
 	}
 	if(absVal(diff[1]) > maxAcceleration){
-		currentRateOfChange[1] = oldRateOfChange[1] + clamp(diff[1], maxAcceleration, -maxAcceleration);
+		currentRateOfChange[1] = oldRateOfChange[1] + float32Clamp(diff[1], maxAcceleration, -maxAcceleration);
 		out->pitch = oldRates.pitch + currentRateOfChange[1];
 	}
 	if(absVal(diff[2]) > maxAcceleration){
-		currentRateOfChange[2] = oldRateOfChange[2] + clamp(diff[2], maxAcceleration, -maxAcceleration);
+		currentRateOfChange[2] = oldRateOfChange[2] + float32Clamp(diff[2], maxAcceleration, -maxAcceleration);
 		out->yaw = oldRates.yaw + currentRateOfChange[2];
 	}
 	oldRates = *out;
