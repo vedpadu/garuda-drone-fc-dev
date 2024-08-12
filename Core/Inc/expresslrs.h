@@ -133,7 +133,8 @@ typedef struct elrsReceiver_s {
 	uint8_t nextRateIndex;
 	connectionState_e connected;
 
-	uint8_t nonceRX; // frequency index that we think we are on, wihtout sync packet
+	uint32_t nonceRX; // frequency index that we think we are on, without sync packet
+	uint32_t nonceDisconnected;
 
 	elrsModSettings_t modParams;
 

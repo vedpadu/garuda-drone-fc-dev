@@ -28,6 +28,7 @@ static uint32_t freqSpread = 0;
 uint32_t seed = 0;
 uint32_t lastSync = 0;
 uint32_t lastPacketMicros = 0;
+uint32_t hopCountDisconnected = 0;
 
 // FHSS Configs for the SX1280
 // start and stop frequencies are pulled from betaflight
@@ -67,7 +68,7 @@ void setLastPacketTime(uint32_t timeMicros){
 }
 
 void clockPhaseUpdate(uint32_t timeMicros){
-	if(receiver.connected != ELRS_DISCONNECTED){
+	if(!isDisconnected()){
 		phaseLocker.rawPhaseDiff = getDeltaTime(phaseLocker.lastClockTimeMicros, phaseLocker.lastPacketTimeMicros);
 		if(phaseLocker.rawPhaseDiff > 1000000){
 			displayInt("DCED", 1);
@@ -94,6 +95,17 @@ void clockPhaseUpdate(uint32_t timeMicros){
 			__HAL_TIM_SET_AUTORELOAD(elrs_tim, defaultInt - 1);
 		}
 		phaseLocker.offset = offset;
+	}else{
+		displayInt("heyge", receiver.nonceDisconnected);
+		receiver.nonceDisconnected++;
+		phaseLocker.lastClockTimeMicros = timeMicros;
+		phaseLocker.lastPacketTimeMicros = timeMicros;
+		if(receiver.nonceDisconnected > (airRateConfig[receiver.rateIndex].rate * 11)/10){
+			displayInt("helloge", 1);
+			receiver.rateIndex = (receiver.rateIndex + 1) % 4;
+			refreshExpressLRS(receiver.rateIndex);
+		}
+		// do receiver refreshing
 	}
 }
 
@@ -112,6 +124,7 @@ void refreshExpressLRS(uint8_t newIndex){
 	receiver.rssiFiltered = 0;
 	receiver.snr = 0;
 	receiver.connected = ELRS_DISCONNECTED;
+	receiver.nonceDisconnected = 0;
 
 	uint32_t timeMicros = micros();
 	phaseLocker.lastClockTimeMicros = timeMicros;
@@ -120,7 +133,7 @@ void refreshExpressLRS(uint8_t newIndex){
 	phaseLocker.rawPhaseDiff = 0;
 
 	receiver.currentFreq = fhssGetInitialFreq();
-	sx1280_init();
+	sx1280_init(); // necessary in refresh?
 
 	changeRateIndex(newIndex, receiver.currentFreq, UID[5]);
 }
@@ -173,7 +186,8 @@ void disconnect(uint32_t timeMicros){
 	phaseLocker.lastClockTimeMicros = timeMicros;
 	phaseLocker.lastPacketTimeMicros = timeMicros; // reset so we don't have crazy long differences
 	receiver.nonceRX = 0;
-	__HAL_TIM_SET_AUTORELOAD(elrs_tim, (int32_t)airRateConfig[receiver.rateIndex].interval);
+	receiver.nonceDisconnected = 0;
+	setPrescaleForRateIndex(receiver.rateIndex);
 	phaseLocker.lastUpdateClock = 0;
 	phaseLocker.rawPhaseDiff = 0;
 
@@ -208,12 +222,12 @@ uint8_t processSyncPacket(elrsOtaPacket_t * const otaPktPtr, uint32_t timeMicros
 	if (otaPktPtr->sync.UID3 != UID[3] || otaPktPtr->sync.UID4 != UID[4]) {
 		return 0;
 	}
-	uint8_t needToWriteConfig = 0;
+	uint8_t config_write_needed = 0;
 
 	// need to change in loop
 	receiver.nextRateIndex = airRateIndexToIndex24(otaPktPtr->sync.rateIndex, receiver.rateIndex);
 	if(receiver.nextRateIndex != receiver.rateIndex){
-		needToWriteConfig = 1;
+		config_write_needed = 1;
 		receiver.rateIndex = receiver.nextRateIndex;
 	}
 
@@ -222,10 +236,10 @@ uint8_t processSyncPacket(elrsOtaPacket_t * const otaPktPtr, uint32_t timeMicros
 
 	if(switchEncMode != receiver.switchMode){
 		receiver.switchMode = switchEncMode;
-		needToWriteConfig = 1;
+		config_write_needed = 1;
 	}
 
-	if(needToWriteConfig){
+	if(config_write_needed){
 		writeCurrentConfigsToFlash();
 	}
 
@@ -253,7 +267,7 @@ void initExpressLRS(){
 	UID[3] = initConfigs[3];
 	UID[4] = initConfigs[4];
 	UID[5] = initConfigs[5];
-	receiver.rateIndex = 1; // TEMP
+	receiver.rateIndex = initConfigs[6]; // TEMP
 	receiver.switchMode = initConfigs[7];
 
 	if(UID[0] == 0 && UID[1] == 0 && UID[2] == 0 && UID[3] == 0 && UID[4] == 0 && UID[5] == 0){
@@ -336,7 +350,7 @@ uint8_t doFhssIrq(){
 	receiver.nonceRX += 1;
 	uint8_t modResultFHSS = (receiver.nonceRX) % receiver.modParams.fhssHopInterval;
 
-	if((receiver.inBindingMode == 0) && modResultFHSS == 0 && receiver.connected != ELRS_DISCONNECTED){
+	if((receiver.inBindingMode == 0) && modResultFHSS == 0 && !isDisconnected()){
 		receiver.currentFreq = fhssGetNextFreq();
 		sx1280_write_RF_frequency(receiver.currentFreq);
 		return 1;
