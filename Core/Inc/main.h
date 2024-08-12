@@ -32,11 +32,6 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 // should prolly just include tim.h
-extern TIM_HandleTypeDef htim5;
-extern TIM_HandleTypeDef htim9;
-extern TIM_HandleTypeDef htim10;
-extern TIM_HandleTypeDef htim2;
-extern TIM_HandleTypeDef htim4;
 extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi3;
 extern uint8_t doBlink;
@@ -97,18 +92,6 @@ void Error_Handler(void);
 #define CLOCK_FRQ 48000000
 #define KALMAN_FILTER_NVIC_PRIO 5
 #define KALMAN_FILTER_SAMPLE_RATE 100
-
-char *convert(uint8_t *a);
-void displayInt(char* desc, int val);
-void displayInts(char* desc, int val, char* desc2, int val2);
-void displayInts3(char* desc, int val, char* desc2, int val2, char* desc3, int val3);
-void displayInts4(char* desc, int val, char* desc2, int val2, char* desc3, int val3, char* desc4, int val4);
-void displayFloats4(char* desc, float32_t val, char* desc2, float32_t val2, char* desc3, float32_t val3, char* desc4, float32_t val4);
-void dispImu(float32_t* gyr, float32_t* acc, float32_t timeDelt);
-void dispEst(quaternion_t est);
-void dispMatrixDebug(float32_t* mat);
-void dispEuler(float32_t* eul);
-
 
 uint32_t micros();
 uint32_t getDeltaTime(uint32_t greater, uint32_t lesser);

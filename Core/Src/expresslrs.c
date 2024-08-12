@@ -10,6 +10,7 @@
 #include "stdlib.h"
 #include "usbd_cdc_if.h"
 #include "math_util.h"
+#include "com_debugging.h"
 // TODO: change order to be better
 
 elrsReceiver_t receiver;

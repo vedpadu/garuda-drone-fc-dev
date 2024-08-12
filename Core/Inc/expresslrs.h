@@ -12,7 +12,8 @@
 #include <stdint.h>
 #include <math.h>
 #include "sx1280.h"
-#include "main.h"
+#include "tim.h"
+#include "com_debugging.h"
 
 #define ELRS_OTA_VERSION_ID 3
 

@@ -43,13 +43,14 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h \
- ../Core/Inc/imu.h ../Core/Inc/bmi270.h ../Core/Inc/spi.h \
- ../Core/Inc/gpio.h ../Core/Inc/biquadlpf.h ../Core/Inc/expresslrs.h \
- ../Core/Inc/flash_memory_handler.h ../Core/Inc/sx1280.h \
- ../Core/Inc/expresslrs.h ../Core/Inc/sx1280.h ../Core/Inc/esc.h \
- ../Core/Inc/tim.h ../Core/Inc/kalman.h ../Core/Inc/button_handler.h \
+ ../Core/Inc/imu.h ../Core/Inc/bmi270.h ../Core/Inc/tim.h \
+ ../Core/Inc/spi.h ../Core/Inc/gpio.h ../Core/Inc/biquadlpf.h \
+ ../Core/Inc/expresslrs.h ../Core/Inc/flash_memory_handler.h \
+ ../Core/Inc/sx1280.h ../Core/Inc/expresslrs.h \
+ ../Core/Inc/com_debugging.h ../Core/Inc/sx1280.h ../Core/Inc/esc.h \
+ ../Core/Inc/kalman.h ../Core/Inc/button_handler.h \
  ../Core/Inc/flash_memory_handler.h ../Core/Inc/motor_mixer.h \
- ../Core/Inc/pid.h ../Core/Inc/esc.h
+ ../Core/Inc/pid.h ../Core/Inc/esc.h ../Core/Inc/com_debugging.h
 ../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
@@ -103,6 +104,7 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h:
 ../Core/Inc/imu.h:
 ../Core/Inc/bmi270.h:
+../Core/Inc/tim.h:
 ../Core/Inc/spi.h:
 ../Core/Inc/gpio.h:
 ../Core/Inc/biquadlpf.h:
@@ -110,12 +112,13 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Core/Inc/flash_memory_handler.h:
 ../Core/Inc/sx1280.h:
 ../Core/Inc/expresslrs.h:
+../Core/Inc/com_debugging.h:
 ../Core/Inc/sx1280.h:
 ../Core/Inc/esc.h:
-../Core/Inc/tim.h:
 ../Core/Inc/kalman.h:
 ../Core/Inc/button_handler.h:
 ../Core/Inc/flash_memory_handler.h:
 ../Core/Inc/motor_mixer.h:
 ../Core/Inc/pid.h:
 ../Core/Inc/esc.h:
+../Core/Inc/com_debugging.h:

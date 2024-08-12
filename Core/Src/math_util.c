@@ -7,6 +7,50 @@
 
 #include "math_util.h"
 
+void addToVector(float32_t* vec1, float32_t* vec2, uint8_t len){
+	int i;
+	for(i = 0;i < len;i++){
+		vec1[i] += vec2[i];
+	}
+}
+
+void subtractFromVector(float32_t* vec1, float32_t* vec2, uint8_t len){
+	int i;
+	for(i = 0;i < len;i++){
+		vec1[i] -= vec2[i];
+	}
+}
+
+float32_t* vector3Add(float32_t* vec1, float32_t* vec2, float32_t* out){
+	int i;
+	for(i = 0;i < 3;i++){
+		out[i] = vec1[i] + vec2[i];
+	}
+	return out;
+}
+
+float32_t* vector3Cross(float32_t* vec1, float32_t* vec2, float32_t* out){
+	out[0] = vec1[1] * vec2[2] - vec2[1] * vec1[2];
+	out[1] = -vec1[0] * vec2[2] + vec2[0] * vec1[2];
+	out[2] = vec1[0] * vec2[1] - vec2[0] * vec1[1];
+	return out;
+}
+
+float32_t* vector3Scale(float32_t* vec, float32_t scale, float32_t* out){
+	out[0] = vec[0] * scale;
+	out[1] = vec[1] * scale;
+	out[2] = vec[2] * scale;
+	return out;
+}
+
+float32_t vectorDot(float32_t* vec1, float32_t* vec2, uint8_t len){
+	float32_t prod = 0.0;
+	int i;
+	for(i = 0;i < len;i++){
+		prod += vec1[i] * vec2[i];
+	}
+	return prod;
+}
 // IMPORTANT: DATA MUST BE FREED AFTER USE
 arm_matrix_instance_f32 skewSymmetric(float32_t* v){
 	float32_t* mat = calloc(9, sizeof(float32_t));
@@ -58,49 +102,13 @@ arm_matrix_instance_f32 outerProductVec3(float32_t* vec1, float32_t* vec2){
 	return matInst;
 }
 
-void subtractFromVector(float32_t* vec1, float32_t* vec2, uint8_t len){
+// assumes matrix already initialized with zeros
+// use 1.0 as value to create an identity matrix
+void diagonalMat(float32_t* matrix, uint8_t size, float32_t value){
 	int i;
-	for(i = 0;i < len;i++){
-		vec1[i] -= vec2[i];
+	for(i = 0;i < size;i++){
+		matrix[i * size + i] = value;
 	}
-}
-
-void addToVector(float32_t* vec1, float32_t* vec2, uint8_t len){
-	int i;
-	for(i = 0;i < len;i++){
-		vec1[i] += vec2[i];
-	}
-}
-
-float32_t* vector3Add(float32_t* vec1, float32_t* vec2, float32_t* out){
-	int i;
-	for(i = 0;i < 3;i++){
-		out[i] = vec1[i] + vec2[i];
-	}
-	return out;
-}
-
-float32_t* vector3Cross(float32_t* vec1, float32_t* vec2, float32_t* out){
-	out[0] = vec1[1] * vec2[2] - vec2[1] * vec1[2];
-	out[1] = -vec1[0] * vec2[2] + vec2[0] * vec1[2];
-	out[2] = vec1[0] * vec2[1] - vec2[0] * vec1[1];
-	return out;
-}
-
-float32_t* vector3Scale(float32_t* vec, float32_t scale, float32_t* out){
-	out[0] = vec[0] * scale;
-	out[1] = vec[1] * scale;
-	out[2] = vec[2] * scale;
-	return out;
-}
-
-float32_t vectorDot(float32_t* vec1, float32_t* vec2, uint8_t len){
-	float32_t prod = 0.0;
-	int i;
-	for(i = 0;i < len;i++){
-		prod += vec1[i] * vec2[i];
-	}
-	return prod;
 }
 
 arm_matrix_instance_f32 generateDiagonalMatrix(float32_t* matrix, uint8_t size, float32_t value){
@@ -130,27 +138,7 @@ float32_t* addMatrices(arm_matrix_instance_f32 in1, arm_matrix_instance_f32 in2,
 	return mat;
 }
 
-void quatToEuler(quaternion_t q, float32_t* outEuler){
 
-	float32_t roll = atan2(2*(q.w*q.vec[0] + q.vec[1]*q.vec[2]), 1 - 2*(q.vec[0]*q.vec[0] + q.vec[1]*q.vec[1]));
-	outEuler[0] = roll;
-
-	float32_t pitch = asin(2*(q.w*q.vec[1] - q.vec[2]*q.vec[0]));
-	//float32_t pitch = -(M_PI/2.0) + 2.0 * atan2(sqrt(1 + 2.0 * (q.w * q.vec[1] - q.vec[0] * q.vec[2])), sqrt(1 - 2.0 * (q.w * q.vec[1]- q.vec[0] * q.vec[2])));
-	outEuler[1] = pitch;
-
-	float32_t yaw = atan2(2*(q.w*q.vec[2] + q.vec[0]*q.vec[1]), 1 - 2*(q.vec[1]*q.vec[1] + q.vec[2]*q.vec[2]));
-	outEuler[2] = yaw;
-}
-
-// assumes matrix already initialized with zeros
-// use 1.0 as value to create an identity matrix
-void diagonalMat(float32_t* matrix, uint8_t size, float32_t value){
-	int i;
-	for(i = 0;i < size;i++){
-		matrix[i * size + i] = value;
-	}
-}
 
 // Inserts a smaller square matrix into a larger square matrix at a specific position. Can choose to free the data in the smaller matrix.
 void injectMatrix(float32_t* outMat, float32_t* inMat, uint8_t y0, uint8_t x0, uint8_t sizeOut, uint8_t sizeIn, uint8_t doFree){
@@ -164,6 +152,53 @@ void injectMatrix(float32_t* outMat, float32_t* inMat, uint8_t y0, uint8_t x0, u
 	if(doFree){
 		free(inMat);
 	}
+}
+
+// Scalar multiply for quaternion
+quaternion_t quatMultiplyScalar(quaternion_t q, float32_t val){
+	q.vec[0] = q.vec[0]*val;
+	q.vec[1] = q.vec[1]*val;
+	q.vec[2] = q.vec[2]*val;
+	q.w = q.w*val;
+	return q;
+}
+
+// Scalar divide for quaternion
+quaternion_t quatDivideScalar(quaternion_t q, float32_t val){
+	q.vec[0] = q.vec[0]/val;
+	q.vec[1] = q.vec[1]/val;
+	q.vec[2] = q.vec[2]/val;
+	q.w = q.w/val;
+	return q;
+}
+
+// Quaternion square magnitude
+float32_t quatSquareMag(quaternion_t q){
+	return q.vec[0] * q.vec[0] + q.vec[1] * q.vec[1] + q.vec[2] * q.vec[2] + q.w * q.w;
+}
+
+// Get the conjugate of a quaternion
+quaternion_t quatConjugate(quaternion_t q){
+	quaternion_t conj = {q.w, {-q.vec[0], -q.vec[1], -q.vec[2]}};
+	return conj;
+}
+
+// Normalize a quaternion
+void normalizeQuaternion(quaternion_t* q){
+	*q = quatDivideScalar(*q, pow(quatSquareMag(*q), 0.5));
+}
+
+void quatToEuler(quaternion_t q, float32_t* outEuler){
+
+	float32_t roll = atan2(2*(q.w*q.vec[0] + q.vec[1]*q.vec[2]), 1 - 2*(q.vec[0]*q.vec[0] + q.vec[1]*q.vec[1]));
+	outEuler[0] = roll;
+
+	float32_t pitch = asin(2*(q.w*q.vec[1] - q.vec[2]*q.vec[0]));
+	//float32_t pitch = -(M_PI/2.0) + 2.0 * atan2(sqrt(1 + 2.0 * (q.w * q.vec[1] - q.vec[0] * q.vec[2])), sqrt(1 - 2.0 * (q.w * q.vec[1]- q.vec[0] * q.vec[2])));
+	outEuler[1] = pitch;
+
+	float32_t yaw = atan2(2*(q.w*q.vec[2] + q.vec[0]*q.vec[1]), 1 - 2*(q.vec[1]*q.vec[1] + q.vec[2]*q.vec[2]));
+	outEuler[2] = yaw;
 }
 
 // Inverse quaternion
@@ -214,39 +249,6 @@ void addToQuat(quaternion_t* q1, quaternion_t q2){
 	addToVector(q1->vec, q2.vec, 3);
 }
 
-// Normalize a quaternion
-void normalizeQuaternion(quaternion_t* q){
-	*q = quatDivideScalar(*q, pow(quatSquareMag(*q), 0.5));
-}
-
-// Get the conjugate of a quaternion
-quaternion_t quatConjugate(quaternion_t q){
-	quaternion_t conj = {q.w, {-q.vec[0], -q.vec[1], -q.vec[2]}};
-	return conj;
-}
-
-// Scalar multiply for quaternion
-quaternion_t quatMultiplyScalar(quaternion_t q, float32_t val){
-	q.vec[0] = q.vec[0]*val;
-	q.vec[1] = q.vec[1]*val;
-	q.vec[2] = q.vec[2]*val;
-	q.w = q.w*val;
-	return q;
-}
-
-// Scalar divide for quaternion
-quaternion_t quatDivideScalar(quaternion_t q, float32_t val){
-	q.vec[0] = q.vec[0]/val;
-	q.vec[1] = q.vec[1]/val;
-	q.vec[2] = q.vec[2]/val;
-	q.w = q.w/val;
-	return q;
-}
-
-// Quaternion square magnitude
-float32_t quatSquareMag(quaternion_t q){
-	return q.vec[0] * q.vec[0] + q.vec[1] * q.vec[1] + q.vec[2] * q.vec[2] + q.w * q.w;
-}
 
 float32_t absVal(float32_t val){
 	if(val < 0){

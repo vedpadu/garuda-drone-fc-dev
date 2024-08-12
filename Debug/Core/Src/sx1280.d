@@ -33,7 +33,16 @@ Core/Src/sx1280.o: ../Core/Src/sx1280.c ../Core/Inc/sx1280.h \
  ../Core/Inc/main.h ../Middlewares/ST/ARM/DSP/Inc/arm_math.h \
  ../Drivers/CMSIS/Include/cmsis_compiler.h ../Core/Inc/kalman.h \
  ../Core/Inc/math_util.h ../Core/Inc/expresslrs.h \
- ../Core/Inc/flash_memory_handler.h ../Core/Inc/sx1280.h
+ ../Core/Inc/flash_memory_handler.h ../Core/Inc/sx1280.h \
+ ../Core/Inc/tim.h ../Core/Inc/com_debugging.h \
+ ../USB_DEVICE/App/usbd_cdc_if.h \
+ ../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc/usbd_cdc.h \
+ ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h \
+ ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h \
+ ../USB_DEVICE/Target/usbd_conf.h ../Core/Inc/main.h \
+ ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h \
+ ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h \
+ ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h
 ../Core/Inc/sx1280.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
@@ -74,3 +83,14 @@ Core/Src/sx1280.o: ../Core/Src/sx1280.c ../Core/Inc/sx1280.h \
 ../Core/Inc/expresslrs.h:
 ../Core/Inc/flash_memory_handler.h:
 ../Core/Inc/sx1280.h:
+../Core/Inc/tim.h:
+../Core/Inc/com_debugging.h:
+../USB_DEVICE/App/usbd_cdc_if.h:
+../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc/usbd_cdc.h:
+../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h:
+../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h:
+../USB_DEVICE/Target/usbd_conf.h:
+../Core/Inc/main.h:
+../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h:
+../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h:
+../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h:
