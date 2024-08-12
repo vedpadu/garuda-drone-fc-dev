@@ -78,12 +78,23 @@ void motorMixerInit(){
 
 void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRate, float32_t* currentAccel, quaternion_t attitude){
 	handleRCInputs(rcData);
+	drone_armed = rc_inputs[4];
+	if(!drone_armed){
+		int i;
+		for(i = 0;i < MOTOR_COUNT;i++){
+			motorOut[i] = 48;
+		}
+		return;
+	}
 
 	float32_t pitchRate = (float32_t)rc_inputs[1]/125.0;
 	float32_t rollRate = (float32_t)rc_inputs[0]/125.0;
-	// rate control
-	//desiredRate.ratePitch = pitchRate;
-	//desiredRate.rateRoll = rollRate;
+	// only runs if the rate control switch is flicked
+	if(rc_inputs[5]){
+		desiredRate.ratePitch = pitchRate;
+		desiredRate.rateRoll = rollRate;
+	}
+
 	float32_t throttle_target = (float32_t)rc_inputs[2]/500.0;
 
 	if(!isDisconnected() && throttle_target > 0){
