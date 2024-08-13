@@ -91,8 +91,8 @@ void Error_Handler(void);
 #define htim_elrs &htim9
 #define htim_esc_kalman &htim5
 #define htim_esc_kalman_irqn TIM5_IRQn
-#define htim_control_loop &htim11
-#define htim_imu &htim10
+#define htim_control_loop &htim10
+#define htim_imu &htim11
 
 #define hspi_imu &hspi1
 #define hspi_receiver &hspi3

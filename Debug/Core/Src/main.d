@@ -43,8 +43,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/control.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h \
- ../Core/Inc/esc.h ../Core/Inc/dma.h ../Core/Inc/spi.h ../Core/Inc/tim.h \
- ../USB_DEVICE/App/usb_device.h \
+ ../Core/Inc/esc.h ../Core/Inc/elrs_rcdata_handler.h ../Core/Inc/dma.h \
+ ../Core/Inc/spi.h ../Core/Inc/tim.h ../USB_DEVICE/App/usb_device.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h \
  ../Core/Inc/gpio.h ../Core/Inc/imu.h ../Core/Inc/bmi270.h \
  ../Core/Inc/spi.h ../Core/Inc/gpio.h ../Core/Inc/biquadlpf.h \
@@ -103,6 +103,7 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/control.h \
 ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h:
 ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h:
 ../Core/Inc/esc.h:
+../Core/Inc/elrs_rcdata_handler.h:
 ../Core/Inc/dma.h:
 ../Core/Inc/spi.h:
 ../Core/Inc/tim.h:

@@ -5,7 +5,6 @@
  *      Author: vedpa
  */
 #include <control.h>
-#include <output_handler.h>
 
 rateSetpoint_t desired_rate = {0.0, 0.0, 0.0}; // roll, pitch, yaw
 angleSetpoint_t desired_attitude = {0.0, 0.0, 0.0};
@@ -17,7 +16,7 @@ int16_t old_rc_inputs[8] = {0}; // do these need to exist, output already smooth
 
 outRates_t motor_setpoints = {0.0, 0.0, 0.0, 0.0}; // values between -1 and 1 for roll, pitch, throttle, yaw
 
-float32_t hover_throttle = -1.0; // throttle that the drone gets close to hovering at
+float32_t hover_throttle = HOVER_THROTTLE_NOT_SET; // throttle that the drone gets close to hovering at
 float32_t last_hoverable_thrott = 0.0; // used at takeoff to find the hover throttle
 
 uint8_t drone_armed = 0;
@@ -73,8 +72,6 @@ void controlsInit(){
 	PIDController_Init(&yaw_rate_PID);
 	PIDController_Init(&throttle_PID);
 
-	// max velocity and acceleration for the motor setpoints
-	initOutputHandler(0.05, 0.15);
 }
 
 void controlsInnerLoop(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRate, float32_t* currentAccel, quaternion_t attitude){
@@ -83,11 +80,10 @@ void controlsInnerLoop(uint16_t* rcData, uint16_t* motorOut, float32_t* currentR
 	if(!drone_armed){
 		int i;
 		for(i = 0;i < MOTOR_COUNT;i++){
-			motorOut[i] = 48;
+			motorOut[i] = THROTTLE_MIN;
 		}
 		return;
 	}
-
 
 	// only runs if the rate control switch is flicked
 	if(rc_inputs[SWITCH_B_IND]){
@@ -98,11 +94,11 @@ void controlsInnerLoop(uint16_t* rcData, uint16_t* motorOut, float32_t* currentR
 		desired_rate.rateRoll = rollRate;
 	}
 
-	float32_t throttle_target = (float32_t)rc_inputs[2]/500.0;
+	float32_t throttle_target = (float32_t)rc_inputs[THROTTLE_STICK_IND]/500.0;
 
 	if(!isDisconnected() && throttle_target > 0){
-		// hovering area... hypothetically -> might be making stuff worse
-		if(absVal(throttle_target - 1.0) < 0.15){
+		// hovering area...
+		if(absVal(throttle_target - 1.0) < HOVER_THROTTLE_RANGE){
 			throttle_target = 1.0;
 		}
 		getDesiredThrottle(throttle_target, attitude, currentAccel);
@@ -112,18 +108,18 @@ void controlsInnerLoop(uint16_t* rcData, uint16_t* motorOut, float32_t* currentR
 
 	// only do rate control and find hover throttle if we are throttling
 	if(motor_setpoints.throttle >= 0.01){
-		if(hover_throttle < 0.0){
+		// + 0.1 to mitigate floating point precision errors
+		if(hover_throttle < HOVER_THROTTLE_NOT_SET + 0.1){
 			findHoverThrottle(attitude, currentAccel);
 		}
 		achieveDesiredRates(currentRate);
 
 	}else{
-		// zero everything on no throttle
+		// reset everything on no throttle
 		motor_setpoints.roll = 0;
 		motor_setpoints.pitch = 0;
 		motor_setpoints.yaw = 0;
-		// should i zero hover throttle?
-		hover_throttle = -1.0;
+		hover_throttle = HOVER_THROTTLE_NOT_SET;
 		last_hoverable_thrott = 0.0;
 	}
 
@@ -134,11 +130,11 @@ void controlsInnerLoop(uint16_t* rcData, uint16_t* motorOut, float32_t* currentR
 void findHoverThrottle(quaternion_t attitude, float32_t* currentAccel){
 	float32_t vec[3] = {0.0, 0.0, -1.0};
 	quaternion_t inverseEst = quatInverse(attitude);
-	rotateVector3ByQuaternion(vec, inverseEst); // verify this is working
+	rotateVector3ByQuaternion(vec, inverseEst);
 	float32_t dot = vec[0] * currentAccel[0] + vec[1] * currentAccel[1] + vec[2] * currentAccel[2];
-	if(dot < 1.0){
+	if(dot < 1.0){ // while we are on the ground (accel shows < 1)
 		last_hoverable_thrott = motor_setpoints.throttle;
-	}else if(dot > 1.1){
+	}else if(dot > 1.0 + ACCEL_TAKEOFF_THRESHOLD){ // only set the hover throttle when we are certain we are taken off
 		hover_throttle = last_hoverable_thrott;
 	}
 }
@@ -177,8 +173,6 @@ void getDesiredThrottle(float32_t dotTarget, quaternion_t attitude, float32_t* a
 
 	// TODO: tune this ctrlr
 	PIDController_Update(&throttle_PID, dotTarget, dot);
-	//displayFloats4("thrust scale", thrustScale,"hover_throttle", hover_throttle,"dotTarget", dotTarget,"thrust scale", thrustScale);
-	//displayFl("thrust scale", thrustScale);
 
 	if(hover_throttle > 0){
 		// only can help alt hold, not perfect as throttle not linearized and stuff
@@ -197,7 +191,6 @@ void getDesiredRates(float32_t* eulerAtt){
 	desired_rate.rateRoll = roll_rate_PID.out;
 	desired_rate.ratePitch = pitch_rate_PID.out;
 	desired_rate.rateYaw = yaw_rate_PID.out;
-	//displayFloats4("roll", desired_rate.rateRoll, "pitch", desired_rate.ratePitch, "yaw", desired_rate.rateYaw, "bruhge", motor_setpoints.throttle);
 }
 
 // rate to motor setpoints -> inner loop
@@ -216,18 +209,18 @@ void handleRCInputs(uint16_t* rcData){
 	int i;
 	for(i = 0;i < 4;i++){
 		if(i != THROTTLE_STICK_IND){
-			rc_inputs[i] = ((int16_t)rcData[i]) - 1500;
+			rc_inputs[i] = ((int16_t)rcData[i]) - REGULAR_STICK_NO_INPUT;
 			if(rc_inputs[i] < DEADBAND && rc_inputs[i] > -DEADBAND){
 				rc_inputs[i] = 0;
 			}
 		}else{
-			rc_inputs[i] = ((int16_t)rcData[i]) - 989;
+			rc_inputs[i] = ((int16_t)rcData[i]) - THROTTLE_STICK_NO_INPUT;
 			if(rc_inputs[i] < DEADBAND){
 				rc_inputs[i] = 0;
 			}
 		}
-		if((rc_inputs[i]) > DEADBAND + 30 || rc_inputs[i] < -DEADBAND - 30){
-			rc_inputs[i] = intClamp(rc_inputs[i], old_rc_inputs[i] + 30, old_rc_inputs[i] - 30);
+		if((rc_inputs[i]) > DEADBAND + MAX_INPUT_VELOCITY || rc_inputs[i] < -DEADBAND - MAX_INPUT_VELOCITY){
+			rc_inputs[i] = intClamp(rc_inputs[i], old_rc_inputs[i] + MAX_INPUT_VELOCITY, old_rc_inputs[i] - MAX_INPUT_VELOCITY);
 		}
 
 		old_rc_inputs[i] = rc_inputs[i];
@@ -235,7 +228,7 @@ void handleRCInputs(uint16_t* rcData){
 	int j;
 	for(j = 4;j < 8;j++){
 		// converts switches to true false
-		if(rcData[j] > 1250){ // lots of leeway for switch flicking so we don't flick the switch on for bad values
+		if(rcData[j] > SWITCH_THRESHOLD){ // lots of leeway for switch flicking so we don't flick the switch on for bad values
 			rc_inputs[j] = 1;
 		}else{
 			rc_inputs[j] = 0;
@@ -246,7 +239,6 @@ void handleRCInputs(uint16_t* rcData){
 // motor mixer
 void getMotorOutputs(outRates_t set, uint16_t* motorOut){
 	float32_t out[MOTOR_COUNT] = {0};
-	//outputUpdate(&set); // smooth outputs
 	out[0] = (set.throttle + set.roll + set.pitch - set.yaw) * 2000;
 	out[1] = (set.throttle + set.roll - set.pitch + set.yaw) * 2000;
 	out[2] = (set.throttle - set.roll - set.pitch - set.yaw) * 2000;
@@ -262,7 +254,7 @@ void getMotorOutputs(outRates_t set, uint16_t* motorOut){
 			out[l] = 0.0;
 		}
 		motorOut[l] = (uint16_t)out[l];
-		motorOut[l] += 48;
+		motorOut[l] += THROTTLE_MIN;
 	}
 }
 

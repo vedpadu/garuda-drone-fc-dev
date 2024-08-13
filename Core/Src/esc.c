@@ -12,7 +12,7 @@ uint16_t initialization_time = 0;
 uint16_t arming_ctr = 0;
 uint8_t do_init_throttle_down = 0;
 uint32_t motor_dshot_buffers[MOTOR_COUNT][DSHOT_FRAME_SIZE] = { { 0 } };
-uint16_t motor_outputs[MOTOR_COUNT] = { INIT_THROTTLE_MIN, INIT_THROTTLE_MIN, INIT_THROTTLE_MIN, INIT_THROTTLE_MIN };
+uint16_t motor_outputs[MOTOR_COUNT] = { THROTTLE_MIN, THROTTLE_MIN, THROTTLE_MIN, THROTTLE_MIN };
 motorPWMTim_t motor_PWM_tims[4] = {
 		{ 0, &htim4, TIM_CHANNEL_2, &hdma_tim4_ch2 }, // black red // + pitch + roll
 		{ 1, &htim2, TIM_CHANNEL_3, &hdma_tim2_ch3_up }, // black black // - pitch + roll
@@ -69,11 +69,11 @@ void arm_ESC() {
 		motor_outputs[1]--;
 		motor_outputs[2]--;
 		motor_outputs[3]--;
-		if (motor_outputs[0] < INIT_THROTTLE_MIN) {
-			motor_outputs[0] = INIT_THROTTLE_MIN;
-			motor_outputs[1] = INIT_THROTTLE_MIN;
-			motor_outputs[2] = INIT_THROTTLE_MIN;
-			motor_outputs[3] = INIT_THROTTLE_MIN;
+		if (motor_outputs[0] < THROTTLE_MIN) {
+			motor_outputs[0] = THROTTLE_MIN;
+			motor_outputs[1] = THROTTLE_MIN;
+			motor_outputs[2] = THROTTLE_MIN;
+			motor_outputs[3] = THROTTLE_MIN;
 		}
 
 	} else {

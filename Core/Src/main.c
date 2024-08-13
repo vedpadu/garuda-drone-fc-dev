@@ -81,13 +81,12 @@ uint16_t mot_buf[4] = {0};
 
 uint32_t lastKalmanTick = 0;
 
-uint32_t lastTimePrint = 0;
 int16_t motorCount = 0;
 int gyroCtr = 0;
 int kalmanCtr = 0;
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-	if (htim == &htim5) {
+	if (htim == htim_esc_kalman) {
 		if(!motors_armed){
 			arm_ESC();
 		}else{
@@ -97,22 +96,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 			  updateKalman(gyro, accel, deltTime);
 			  kalmanCtr++;
 			  controlsOuterUpdate(estimate, accel);
-//			  float32_t vec[3] = {0.0, 0.0, -1.0};
-//			  quaternion_t inverseEst = quatInverse(estimate);
-//				rotateVector3ByQuaternion(vec, inverseEst); // verify this is working
-//				float32_t dot = vec[0] * accel[0] + vec[1] * accel[1] + vec[2] * accel[2];
-				//displayFloats4("dot,", outThrott, "accel1", velEst, "accel1", accel[1], "accel2", accel[2]);
-			  //dispImu(gyro, accel, deltTime);
-			  //dispEst(estimate);
-			  //dispImuAndPID(gyro, kalman_gyro, motorSetpoints, mot_buf);
 		}
-
-	  }else if(htim == &htim9){
+	  }else if(htim == htim_elrs){
 		  // keep the internal clock in phase
 		  setLastClockTime(micros());
 		  clockPhaseUpdate(0);
 		  doFhssIrq();
-	  }else if(htim == &htim10){
+	  }else if(htim == htim_control_loop){
 		  motorCount++;
 		  if(bmi270_ready && kalman_initialized && !isDisconnected()){
 			  // fast loop, gets inputs and does rate control
@@ -121,31 +111,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 			  controlsInnerLoop(rcData, mot_buf, gyro, accel, estimate);
 			  set_esc_outputs(mot_buf);
 		  }
-	  }else if(htim == &htim11){
+	  }else if(htim == htim_imu){
 		  if(bmi270_ready && kalman_initialized){
 			  readIMUData();
 			  gyroCtr++;
 		  }
-	  }else if(htim == &htim3){
+	  }else if(htim == htim_debug_loop){
 		  if(bmi270_ready && kalman_initialized){
-			  //displayInts4("rc0", rcData[0], "rc1", rcData[1], "rc2", rcData[2], "rc3", rcData[3]);
-
-				//displayFloats4("00", estimate.w, "01", estimate.vec[0], "02", estimate.vec[1], "03", estimate.vec[2]);
-			  	uint32_t currTime = micros();
-//			  	float32_t vec[3] = {0.0, 0.0, -1.0};
-//				quaternion_t inverseEst = quatInverse(estimate);
-//				rotateVector3ByQuaternion(vec, inverseEst); // verify this is working
-//				float32_t dot = vec[0] * accel[0] + vec[1] * accel[1] + vec[2] * accel[2];
-				//displayFloats4("dot", dot, "accel1", accel[0], "accel1", accel[1], "accel2", accel[2]);
-			  	//dispImu(gyro, accel, 0.1);
-			  	//displayFloats4("r", motorSetpoints.roll, "p", motorSetpoints.pitch, "y", motorSetpoints.yaw, "t", motorSetpoints.throttle);
-			  	//displayFloats4("gyro", (float)countGyros, "motorUpdate", gyro[0], "kalman", gyroPreFilt[0], "delta", (float)(getDeltaTime(currTime, lastTimePrint))/1000);
-				//displayInts4("gyro", gyroCtr, "motorUpdate", motorCount, "kalman", kalmanCtr, "delta", (getDeltaTime(currTime, lastTimePrint))/1000);
-				lastTimePrint = currTime;
 				if(!isBindingMode()){
 					HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
 				}
-
 				HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
 		  }
 
@@ -161,7 +136,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	  processRFPacket((uint8_t *)radioDmaBuffer, micros());
   } else if(GPIO_Pin == GPIO_PIN_2){
 	  // add erase flash sector functionality on multiple presses as well as clearing bind mode
-	  char* data4 = "BIND\n";
+	  char* data4 = "BUTTON PRESS\n";
 	  CDC_Transmit_FS((uint8_t *)data4, strlen(data4));
 	  processButtonPress(micros());
   } else {
@@ -213,12 +188,6 @@ int main(void)
   MX_TIM11_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(htim_debug_loop); // debug loop and LEDs
-  //HAL_TIM_Base_Start_IT(&htim9); // clock express lrs phase // 250 hz atm
-  //HAL_TIM_Base_Start_IT(&htim5); // esc // 4000 hz
-  HAL_Delay(1); // Delays are to make sure the timers are not in phase.
-  //HAL_TIM_Base_Start_IT(&htim11); // motor // trying to get 1000 hz // this clock only psc work?
-  HAL_Delay(1);
-  //HAL_TIM_Base_Start_IT(&htim10); // imu 100 hz
 
   // initialize peripherals
   init_ESC();

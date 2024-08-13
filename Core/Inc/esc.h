@@ -25,7 +25,7 @@ extern uint8_t motors_armed;
 
 #define ESC_POWER_UP_TIME 3000	// wait 3s before arming sequence
 #define INIT_THROTTLE_MAX 500	    // max throttle when initializing
-#define INIT_THROTTLE_MIN 48	    // min throttle when initializing
+#define THROTTLE_MIN 48	    // min throttle when initializing
 
 #define DSHOT_FRAME_SIZE 18
 
