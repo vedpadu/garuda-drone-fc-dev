@@ -30,10 +30,9 @@ Core/Src/sx1280.o: ../Core/Src/sx1280.c ../Core/Inc/sx1280.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_usb.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd_ex.h \
- ../Core/Inc/main.h ../Core/Inc/expresslrs.h \
+ ../Core/Inc/main.h ../Core/Inc/tim.h ../Core/Inc/expresslrs.h \
  ../Core/Inc/flash_memory_handler.h ../Core/Inc/sx1280.h \
- ../Core/Inc/tim.h ../Core/Inc/com_debugging.h \
- ../USB_DEVICE/App/usbd_cdc_if.h \
+ ../Core/Inc/com_debugging.h ../USB_DEVICE/App/usbd_cdc_if.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc/usbd_cdc.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h \
@@ -76,10 +75,10 @@ Core/Src/sx1280.o: ../Core/Src/sx1280.c ../Core/Inc/sx1280.h \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_usb.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd_ex.h:
 ../Core/Inc/main.h:
+../Core/Inc/tim.h:
 ../Core/Inc/expresslrs.h:
 ../Core/Inc/flash_memory_handler.h:
 ../Core/Inc/sx1280.h:
-../Core/Inc/tim.h:
 ../Core/Inc/com_debugging.h:
 ../USB_DEVICE/App/usbd_cdc_if.h:
 ../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc/usbd_cdc.h:

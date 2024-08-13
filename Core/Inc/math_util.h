@@ -17,6 +17,11 @@ typedef struct quaternion_s {
 	float32_t vec[3];
 }quaternion_t;
 
+#define maxf(a,b) \
+  __extension__ ({ __typeof__ (a) _a = (a); \
+  __typeof__ (b) _b = (b); \
+  _a > _b ? _a : _b; })
+
 void subtractFromVector(float32_t* vec1, float32_t* vec2, uint8_t size);
 void addToVector(float32_t* vec1, float32_t* vec2, uint8_t len);
 float32_t vectorDot(float32_t* vec1, float32_t* vec2, uint8_t len);
@@ -45,7 +50,7 @@ arm_matrix_instance_f32 quatToMatrix(quaternion_t q);
 arm_matrix_instance_f32 skewSymmetric(float32_t* v);
 
 float32_t float32Clamp(float32_t in, float32_t max, float32_t min);
-int16_t int16Clamp(int16_t in, int16_t max, int16_t min);
+int intClamp(int in, int max, int min);
 float32_t absVal(float32_t val);
 int32_t absInt(int32_t val);
 

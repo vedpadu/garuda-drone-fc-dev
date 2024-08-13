@@ -2,19 +2,17 @@
  * expresslrs.h
  *
  *  Created on: Jul 18, 2024
- *      Author: vedpa
+ *      Author: vedpadu
  */
 
 #ifndef INC_EXPRESSLRS_H_
 #define INC_EXPRESSLRS_H_
 
-#include <flash_memory_handler.h>
-#include <stdint.h>
-#include <math.h>
+#include "flash_memory_handler.h"
 #include "main.h"
 #include "sx1280.h"
-#include "tim.h"
 #include "com_debugging.h"
+#include "math_util.h"
 
 #define ELRS_OTA_VERSION_ID 3
 
@@ -29,14 +27,6 @@
 
 
 extern uint8_t isBinding;
-
-#define elrs_tim (&htim9)
-
-#define maxf(a,b) \
-  __extension__ ({ __typeof__ (a) _a = (a); \
-  __typeof__ (b) _b = (b); \
-  _a > _b ? _a : _b; })
-
 
 typedef enum {
     ELRS_RC_DATA_PACKET = 0x00,
@@ -113,16 +103,6 @@ typedef struct elrsModSettings_s {
     uint8_t preambleLen;
 } elrsModSettings_t;
 
-static inline int constrain(int amt, int low, int high)
-{
-    if (amt < low)
-        return low;
-    else if (amt > high)
-        return high;
-    else
-        return amt;
-}
-
 typedef struct clockScaleSettings_s {
 	uint8_t index;
 	uint16_t prescale;
@@ -156,31 +136,34 @@ typedef struct elrsPhase_s {
 	int32_t offset;
 }elrsPhase_t;
 
-uint8_t rngN(const uint8_t max);
 uint32_t fhssGetInitialFreq();
 void fhssGenSequence(const uint8_t inputUID[]);
-void initExpressLRS();
-void refreshExpressLRS(uint8_t newIndex);
-void setBindingMode();
-void processRFPacket(uint8_t* packet, uint32_t timeMicros);
-void writeCurrentConfigsToFlash();
-void changeRateIndex(uint8_t newIndex, uint32_t freq, uint8_t uid5);
-void setPrescaleForRateIndex(uint8_t index);
+uint8_t rngN(const uint8_t max);
 uint8_t airRateIndexToIndex24(uint8_t airRate, uint8_t currentIndex);
 uint8_t doFhssIrq();
 uint32_t fhssGetNextFreq();
 
+void initExpressLRS();
+void refreshExpressLRS(uint8_t newIndex);
+
+void processRFPacket(uint8_t* packet, uint32_t timeMicros);
+uint8_t processSyncPacket(elrsOtaPacket_t * const otaPktPtr, uint32_t timeMicros);
+void processBindPacket(uint8_t* packet);
+
+void writeCurrentConfigsToFlash();
+void changeRateIndex(uint8_t newIndex, uint32_t freq, uint8_t uid5);
+void setPrescaleForRateIndex(uint8_t index);
+
 void clockPhaseUpdate(uint32_t timeMicros);
 void setLastClockTime(uint32_t timeMicros);
 void setLastPacketTime(uint32_t timeMicros);
-//void handleConnectionState(uint32_t timeMicros);
 
 void tentativeConnection(uint32_t timeMicros);
 void disconnect(uint32_t timeMicros);
 
-uint8_t processSyncPacket(elrsOtaPacket_t * const otaPktPtr, uint32_t timeMicros);
-void processBindPacket(uint8_t* packet);
 void expressLrsSetRcDataFromPayload(uint16_t *rcData);
+
+void setBindingMode();
 void exitBindMode();
 
 uint8_t isDisconnected();

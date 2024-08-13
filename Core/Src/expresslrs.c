@@ -1,17 +1,13 @@
 /*
  * expresslrs.c
+ * expresslrs frequency hopping and packet decoding
  *
  *  Created on: Jul 18, 2024
- *      Author: vedpa
+ *      Author: vedpadu
  */
-#include <elrs_rcdata_handler.h>
+
+#include "elrs_rcdata_handler.h"
 #include "expresslrs.h"
-#include <string.h>
-#include "stdlib.h"
-#include "usbd_cdc_if.h"
-#include "math_util.h"
-#include "com_debugging.h"
-// TODO: change order to be better
 
 elrsReceiver_t receiver;
 elrsPhase_t phaseLocker;
@@ -45,74 +41,26 @@ elrsModSettings_t airRateConfig[4] = {
 	{3, 50, LORA_BW_800, LORA_SF_8, LORA_CR_LI_4_8, 20000, 2, 12} // bind mode rate index
 };
 
-void setBindingMode(){
-	if(!receiver.inBindingMode){
-		receiver.inBindingMode = 1;
-		memcpy(UID, BindingUID, 6);
+void initExpressLRS(){
+	HAL_TIM_Base_Start_IT(htim_elrs);
 
-		refreshExpressLRS(bindRateIndex);
-	}
-}
+	initFlashMemoryConfig(2);
+	uint8_t initConfigs[8] = {0x00};
+	readCurrentConfig(initConfigs);
+	UID[0] = initConfigs[0];
+	UID[1] = initConfigs[1];
+	UID[2] = initConfigs[2];
+	UID[3] = initConfigs[3];
+	UID[4] = initConfigs[4];
+	UID[5] = initConfigs[5];
+	receiver.rateIndex = initConfigs[6]; // TEMP
+	receiver.switchMode = initConfigs[7];
 
-void setPrescaleForRateIndex(uint8_t index){
-	__HAL_TIM_SET_AUTORELOAD(elrs_tim, airRateConfig[index].interval - 1);
-}
-
-void setLastClockTime(uint32_t timeMicros){
-	phaseLocker.lastClockTimeMicros = timeMicros;
-	phaseLocker.lastUpdateClock = 1;
-}
-
-void setLastPacketTime(uint32_t timeMicros){
-	phaseLocker.lastPacketTimeMicros = timeMicros;
-	phaseLocker.lastUpdateClock = 0;
-}
-
-void clockPhaseUpdate(uint32_t timeMicros){
-	if(!isDisconnected()){
-		phaseLocker.rawPhaseDiff = getDeltaTime(phaseLocker.lastClockTimeMicros, phaseLocker.lastPacketTimeMicros);
-		if(phaseLocker.rawPhaseDiff > 1000000){
-			displayInt("DCED", 1);
-			disconnect(timeMicros);
-			return;
-		}
-
-		int32_t defaultInt = (int32_t)airRateConfig[receiver.rateIndex].interval;
-		int32_t offset;
-		phaseLocker.rawPhaseDiff = phaseLocker.rawPhaseDiff % defaultInt;
-		int32_t phaseSigned = (int32_t)phaseLocker.rawPhaseDiff;
-
-		offset = defaultInt/2 - phaseSigned; // need to be half out of phase so that the interrupts do not coliide!!
-		offset = constrain(offset, -defaultInt/4, defaultInt/4); // don't phase too much.
-
-		if(receiver.connected == ELRS_TENTATIVE && absInt(offset) < 50){
-			receiver.connected = ELRS_CONNECTED;
-			displayInt("CONNECTED!", 1);
-		}
-		if(offset > 10 || offset < -10){
-			__HAL_TIM_SET_AUTORELOAD(elrs_tim, defaultInt + (offset/3) - 1);
-		}else{
-			// dont phase if already locked on
-			__HAL_TIM_SET_AUTORELOAD(elrs_tim, defaultInt - 1);
-		}
-		phaseLocker.offset = offset;
+	if(UID[0] == 0 && UID[1] == 0 && UID[2] == 0 && UID[3] == 0 && UID[4] == 0 && UID[5] == 0){
+		setBindingMode();
 	}else{
-		receiver.nonceDisconnected++;
-		phaseLocker.lastClockTimeMicros = timeMicros;
-		phaseLocker.lastPacketTimeMicros = timeMicros;
-		if(receiver.nonceDisconnected > (airRateConfig[receiver.rateIndex].rate * 11)/10){
-			receiver.rateIndex = (receiver.rateIndex + 1) % 4;
-			refreshExpressLRS(receiver.rateIndex);
-		}
-		// do receiver refreshing
+		refreshExpressLRS(receiver.rateIndex);
 	}
-}
-
-uint8_t isDisconnected(){
-	if(receiver.connected == ELRS_DISCONNECTED){
-		return 1;
-	}
-	return 0;
 }
 
 // deals with frequency hopping and LORA params
@@ -137,6 +85,48 @@ void refreshExpressLRS(uint8_t newIndex){
 	changeRateIndex(newIndex, receiver.currentFreq, UID[5]);
 }
 
+// run on sequence a little before when we think a packet should arrive,
+// so that we can change the frequency to ensure that we get all packets
+void clockPhaseUpdate(uint32_t timeMicros){
+	if(!isDisconnected()){
+		phaseLocker.rawPhaseDiff = getDeltaTime(phaseLocker.lastClockTimeMicros, phaseLocker.lastPacketTimeMicros);
+		if(phaseLocker.rawPhaseDiff > 1000000){
+			displayInt("DCED", 1);
+			disconnect(timeMicros);
+			return;
+		}
+
+		int32_t defaultInt = (int32_t)airRateConfig[receiver.rateIndex].interval;
+		int32_t offset;
+		phaseLocker.rawPhaseDiff = phaseLocker.rawPhaseDiff % defaultInt;
+		int32_t phaseSigned = (int32_t)phaseLocker.rawPhaseDiff;
+
+		offset = defaultInt/2 - phaseSigned; // need to be half out of phase so that the interrupts do not coliide!!
+		offset = intClamp(offset, defaultInt/4, -defaultInt/4); // don't phase too much.
+
+		if(receiver.connected == ELRS_TENTATIVE && absInt(offset) < 50){
+			receiver.connected = ELRS_CONNECTED;
+			displayInt("CONNECTED!", 1);
+		}
+		if(offset > 10 || offset < -10){
+			__HAL_TIM_SET_AUTORELOAD(htim_elrs, defaultInt + (offset/3) - 1);
+		}else{
+			// don't phase if already locked on
+			__HAL_TIM_SET_AUTORELOAD(htim_elrs, defaultInt - 1);
+		}
+		phaseLocker.offset = offset;
+	}else{
+		receiver.nonceDisconnected++;
+		phaseLocker.lastClockTimeMicros = timeMicros;
+		phaseLocker.lastPacketTimeMicros = timeMicros;
+		if(receiver.nonceDisconnected > (airRateConfig[receiver.rateIndex].rate * 11)/10){
+			receiver.rateIndex = (receiver.rateIndex + 1) % 4;
+			refreshExpressLRS(receiver.rateIndex);
+		}
+	}
+}
+
+// run when a packet is actually received
 void processRFPacket(uint8_t* packet, uint32_t timeMicros){
 	elrsOtaPacket_t * const otaPktPtr = (elrsOtaPacket_t * const) packet;
 
@@ -155,8 +145,7 @@ void processRFPacket(uint8_t* packet, uint32_t timeMicros){
 	    	memcpy((uint8_t *) rcPayload, (uint8_t *) packet, 8);
 		    break;
 	    case ELRS_MSP_DATA_PACKET:
-	    	//displayInts4("nonceRx", receiver.nonceRX, "fhssInd", fhssIndex, "time", timeMicros, "phase", phaseLocker.rawPhaseDiff);
-		    if (receiver.inBindingMode && otaPktPtr->msp_ul.packageIndex == 1 && otaPktPtr->msp_ul.payload[0] == ELRS_MSP_BIND) {
+	    	if (receiver.inBindingMode && otaPktPtr->msp_ul.packageIndex == 1 && otaPktPtr->msp_ul.payload[0] == ELRS_MSP_BIND) {
 			    uint8_t* packy = (uint8_t*)&otaPktPtr->msp_ul.payload[1];
 			    processBindPacket(packy);
 			    char* data4 = "BIND PACK\n";
@@ -169,28 +158,6 @@ void processRFPacket(uint8_t* packet, uint32_t timeMicros){
 
 }
 
-void tentativeConnection(uint32_t timeMicros){
-	receiver.connected = ELRS_TENTATIVE;
-
-	phaseLocker.lastClockTimeMicros = timeMicros;
-	phaseLocker.lastPacketTimeMicros = timeMicros;
-	phaseLocker.rawPhaseDiff = 0;
-}
-
-void disconnect(uint32_t timeMicros){
-	receiver.connected = ELRS_DISCONNECTED;
-	phaseLocker.lastClockTimeMicros = timeMicros;
-	phaseLocker.lastPacketTimeMicros = timeMicros; // reset so we don't have crazy long differences
-	receiver.nonceRX = 0;
-	receiver.nonceDisconnected = 0;
-	setPrescaleForRateIndex(receiver.rateIndex);
-	phaseLocker.lastUpdateClock = 0;
-	phaseLocker.rawPhaseDiff = 0;
-
-	receiver.currentFreq = fhssGetInitialFreq();
-	sx1280_write_RF_frequency(receiver.currentFreq);
-}
-
 void processBindPacket(uint8_t* packet){
 	UID[2] = packet[0];
 	UID[3] = packet[1];
@@ -201,16 +168,6 @@ void processBindPacket(uint8_t* packet){
 	receiver.rateIndex = 0; // TEMP!!! make connection searching alg
 	writeCurrentConfigsToFlash();
 	refreshExpressLRS(receiver.rateIndex);
-}
-
-void exitBindMode(){
-	receiver.inBindingMode = 0;
-	receiver.rateIndex = 1;
-	refreshExpressLRS(receiver.rateIndex);
-}
-
-uint8_t isBindingMode(){
-	return receiver.inBindingMode;
 }
 
 uint8_t processSyncPacket(elrsOtaPacket_t * const otaPktPtr, uint32_t timeMicros){
@@ -251,31 +208,31 @@ uint8_t processSyncPacket(elrsOtaPacket_t * const otaPktPtr, uint32_t timeMicros
 	return 1;
 }
 
+void tentativeConnection(uint32_t timeMicros){
+	receiver.connected = ELRS_TENTATIVE;
+
+	phaseLocker.lastClockTimeMicros = timeMicros;
+	phaseLocker.lastPacketTimeMicros = timeMicros;
+	phaseLocker.rawPhaseDiff = 0;
+}
+
+void disconnect(uint32_t timeMicros){
+	receiver.connected = ELRS_DISCONNECTED;
+	phaseLocker.lastClockTimeMicros = timeMicros;
+	phaseLocker.lastPacketTimeMicros = timeMicros; // reset so we don't have crazy long differences
+	receiver.nonceRX = 0;
+	receiver.nonceDisconnected = 0;
+	setPrescaleForRateIndex(receiver.rateIndex);
+	phaseLocker.lastUpdateClock = 0;
+	phaseLocker.rawPhaseDiff = 0;
+
+	receiver.currentFreq = fhssGetInitialFreq();
+	sx1280_write_RF_frequency(receiver.currentFreq);
+}
+
 void writeCurrentConfigsToFlash(){
 	uint8_t buf[8] = {UID[0], UID[1], UID[2], UID[3], UID[4], UID[5], receiver.rateIndex, receiver.switchMode};
 	writeNewConfig(buf);
-}
-
-void initExpressLRS(){
-	HAL_TIM_Base_Start_IT(htim_elrs);
-
-	initFlashMemoryConfig(2);
-	uint8_t initConfigs[8] = {0x00};
-	readCurrentConfig(initConfigs);
-	UID[0] = initConfigs[0];
-	UID[1] = initConfigs[1];
-	UID[2] = initConfigs[2];
-	UID[3] = initConfigs[3];
-	UID[4] = initConfigs[4];
-	UID[5] = initConfigs[5];
-	receiver.rateIndex = initConfigs[6]; // TEMP
-	receiver.switchMode = initConfigs[7];
-
-	if(UID[0] == 0 && UID[1] == 0 && UID[2] == 0 && UID[3] == 0 && UID[4] == 0 && UID[5] == 0){
-		setBindingMode();
-	}else{
-		refreshExpressLRS(receiver.rateIndex);
-	}
 }
 
 void changeRateIndex(uint8_t newIndex, uint32_t freq, uint8_t uid5){
@@ -286,12 +243,50 @@ void changeRateIndex(uint8_t newIndex, uint32_t freq, uint8_t uid5){
 	sx1280_set_RF_rate(newSettings.sf, newSettings.bw, newSettings.cr, newSettings.preambleLen, freq, uid5 & 0x01);
 }
 
-
-
 void expressLrsSetRcDataFromPayload(uint16_t *rcData)
 {
 	volatile elrsOtaPacket_t * const otaPktPtr = (elrsOtaPacket_t * const) rcPayload;
 	unpackChannelDataHybridWide(rcData, otaPktPtr);
+}
+
+void setBindingMode(){
+	if(!receiver.inBindingMode){
+		receiver.inBindingMode = 1;
+		memcpy(UID, BindingUID, 6);
+
+		refreshExpressLRS(bindRateIndex);
+	}
+}
+
+void exitBindMode(){
+	receiver.inBindingMode = 0;
+	receiver.rateIndex = 1;
+	refreshExpressLRS(receiver.rateIndex);
+}
+
+uint8_t isDisconnected(){
+	if(receiver.connected == ELRS_DISCONNECTED){
+		return 1;
+	}
+	return 0;
+}
+
+uint8_t isBindingMode(){
+	return receiver.inBindingMode;
+}
+
+void setPrescaleForRateIndex(uint8_t index){
+	__HAL_TIM_SET_AUTORELOAD(htim_elrs, airRateConfig[index].interval - 1);
+}
+
+void setLastClockTime(uint32_t timeMicros){
+	phaseLocker.lastClockTimeMicros = timeMicros;
+	phaseLocker.lastUpdateClock = 1;
+}
+
+void setLastPacketTime(uint32_t timeMicros){
+	phaseLocker.lastPacketTimeMicros = timeMicros;
+	phaseLocker.lastUpdateClock = 0;
 }
 
 

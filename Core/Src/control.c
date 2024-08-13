@@ -62,7 +62,6 @@ PIDController throttle_PID = {PID_THROTTLE_KP, PID_THROTTLE_KI, PID_THROTTLE_KD,
 						PID_THROTTLE_LIM_MIN_INT, PID_THROTTLE_LIM_MAX_INT,
 						SAMPLE_TIME_INNER };
 
-
 void controlsInit(){
 	HAL_TIM_Base_Start_IT(htim_control_loop);
 
@@ -80,7 +79,7 @@ void controlsInit(){
 
 void controlsInnerLoop(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRate, float32_t* currentAccel, quaternion_t attitude){
 	handleRCInputs(rcData);
-	drone_armed = rc_inputs[4];
+	drone_armed = rc_inputs[SWITCH_A_IND];
 	if(!drone_armed){
 		int i;
 		for(i = 0;i < MOTOR_COUNT;i++){
@@ -91,9 +90,9 @@ void controlsInnerLoop(uint16_t* rcData, uint16_t* motorOut, float32_t* currentR
 
 
 	// only runs if the rate control switch is flicked
-	if(rc_inputs[5]){
-		float32_t pitchRate = (float32_t)-rc_inputs[1]/125.0;
-		float32_t rollRate = (float32_t)rc_inputs[0]/125.0;
+	if(rc_inputs[SWITCH_B_IND]){
+		float32_t pitchRate = (float32_t)-rc_inputs[PITCH_STICK_IND]/125.0;
+		float32_t rollRate = (float32_t)rc_inputs[ROLL_STICK_IND]/125.0;
 
 		desired_rate.ratePitch = pitchRate;
 		desired_rate.rateRoll = rollRate;
@@ -145,9 +144,9 @@ void findHoverThrottle(quaternion_t attitude, float32_t* currentAccel){
 }
 
 void controlsOuterUpdate(quaternion_t attitude, float32_t* accel){
-	float32_t pitchRate = -(float32_t)rc_inputs[1]/500.0;
-	float32_t rollRate = (float32_t)rc_inputs[0]/500.0;
-	float32_t yawRate = (float32_t)rc_inputs[3]/200.0;
+	float32_t pitchRate = -(float32_t)rc_inputs[PITCH_STICK_IND]/500.0;
+	float32_t rollRate = (float32_t)rc_inputs[ROLL_STICK_IND]/500.0;
+	float32_t yawRate = (float32_t)rc_inputs[YAW_STICK_IND]/200.0;
 
 	desired_attitude.pitch = pitchRate;
 	desired_attitude.roll = rollRate;
@@ -212,29 +211,27 @@ void achieveDesiredRates(float32_t* currentRate){
 	motor_setpoints.yaw = yaw_motor_PID.out;
 }
 
-// TODO: switch handling
 // clamps max velocity for rc inputs
 void handleRCInputs(uint16_t* rcData){
 	int i;
 	for(i = 0;i < 4;i++){
-		if(i != 2){ // not throttle
+		if(i != THROTTLE_STICK_IND){
 			rc_inputs[i] = ((int16_t)rcData[i]) - 1500;
 			if(rc_inputs[i] < DEADBAND && rc_inputs[i] > -DEADBAND){
 				rc_inputs[i] = 0;
 			}
-		}else{ // throttle
+		}else{
 			rc_inputs[i] = ((int16_t)rcData[i]) - 989;
 			if(rc_inputs[i] < DEADBAND){
 				rc_inputs[i] = 0;
 			}
 		}
 		if((rc_inputs[i]) > DEADBAND + 30 || rc_inputs[i] < -DEADBAND - 30){
-			rc_inputs[i] = int16Clamp(rc_inputs[i], old_rc_inputs[i] + 30, old_rc_inputs[i] - 30);
+			rc_inputs[i] = intClamp(rc_inputs[i], old_rc_inputs[i] + 30, old_rc_inputs[i] - 30);
 		}
 
 		old_rc_inputs[i] = rc_inputs[i];
 	}
-	//displayInts4("rc1", rc_inputs[0], "rc2", rc_inputs[1], "rc3", rc_inputs[2], "rc4", rc_inputs[3]);
 	int j;
 	for(j = 4;j < 8;j++){
 		// converts switches to true false
@@ -246,8 +243,7 @@ void handleRCInputs(uint16_t* rcData){
 	}
 }
 
-
-
+// motor mixer
 void getMotorOutputs(outRates_t set, uint16_t* motorOut){
 	float32_t out[MOTOR_COUNT] = {0};
 	//outputUpdate(&set); // smooth outputs

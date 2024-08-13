@@ -264,7 +264,8 @@ int32_t absInt(int32_t val){
 	return val;
 }
 
-int16_t int16Clamp(int16_t in, int16_t max, int16_t min){
+
+int intClamp(int in, int max, int min){
 	if(in > max){
 		in = max;
 	}
