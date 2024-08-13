@@ -10,31 +10,27 @@
 #include "expresslrs.h"
 
 elrsReceiver_t receiver;
-elrsPhase_t phaseLocker;
-uint8_t BindingUID[6] = {0,1,2,3,4,5}; // seed for binding
+elrsPhase_t phase_locker;
+uint8_t binding_UID[6] = {0,1,2,3,4,5}; // seed for binding
 uint8_t UID[6];
 
-uint8_t rcPayload[8] = {0};
-int bindRateIndex = 3;
+uint8_t rc_payload[8] = {0};
 
-uint8_t fhssSequence[ELRS_NR_SEQUENCE_ENTRIES] = {0};
-uint8_t fhssIndex = 0;
-static uint16_t seqCount = 0;
-static uint8_t syncChannel = 0;
-static uint32_t freqSpread = 0;
+uint8_t fhss_sequence[ELRS_NR_SEQUENCE_ENTRIES] = {0};
+uint8_t fhss_index = 0;
+static uint16_t seq_count = 0;
+static uint8_t sync_channel = 0;
+static uint32_t freq_spread = 0;
 uint32_t seed = 0;
-uint32_t lastSync = 0;
-uint32_t lastPacketMicros = 0;
-uint32_t hopCountDisconnected = 0;
 
 // FHSS Configs for the SX1280
 // start and stop frequencies are pulled from betaflight
-uint32_t freqStart =  (uint32_t)((2400400000)/ SX1280_PLL_STEP);
-uint32_t freqStop = (uint32_t)((2479400000)/ SX1280_PLL_STEP);
-uint8_t freqCount = 80;
+uint32_t freq_start = (uint32_t)((2400400000)/ SX1280_PLL_STEP);
+uint32_t freq_stop = (uint32_t)((2479400000)/ SX1280_PLL_STEP);
+uint8_t freq_count = 80;
 
 // ripped off betaflight -> settings for each frequency the radio can transmit at.
-elrsModSettings_t airRateConfig[4] = {
+	elrsModSettings_t air_rate_config[4] = {
 	{0, 500, LORA_BW_800, LORA_SF_5, LORA_CR_LI_4_6, 2000, 4, 12},
 	{1, 250, LORA_BW_800, LORA_SF_6, LORA_CR_LI_4_8, 4000, 4, 14},
 	{2, 150, LORA_BW_800, LORA_SF_7, LORA_CR_LI_4_8, 6666, 4, 12},
@@ -45,108 +41,101 @@ void initExpressLRS(){
 	HAL_TIM_Base_Start_IT(htim_elrs);
 
 	initFlashMemoryConfig(2);
-	uint8_t initConfigs[8] = {0x00};
-	readCurrentConfig(initConfigs);
-	UID[0] = initConfigs[0];
-	UID[1] = initConfigs[1];
-	UID[2] = initConfigs[2];
-	UID[3] = initConfigs[3];
-	UID[4] = initConfigs[4];
-	UID[5] = initConfigs[5];
-	receiver.rateIndex = initConfigs[6]; // TEMP
-	receiver.switchMode = initConfigs[7];
+	uint8_t init_configs[8] = {0x00};
+	readCurrentConfig(init_configs);
+	// reading config
+	UID[0] = init_configs[0];
+	UID[1] = init_configs[1];
+	UID[2] = init_configs[2];
+	UID[3] = init_configs[3];
+	UID[4] = init_configs[4];
+	UID[5] = init_configs[5];
+	receiver.rate_index = init_configs[6];
+	receiver.switch_mode = init_configs[7];
 
+	// no UID in flash memory
 	if(UID[0] == 0 && UID[1] == 0 && UID[2] == 0 && UID[3] == 0 && UID[4] == 0 && UID[5] == 0){
 		setBindingMode();
 	}else{
-		refreshExpressLRS(receiver.rateIndex);
+		refreshExpressLRS(receiver.rate_index);
 	}
 }
 
 // deals with frequency hopping and LORA params
 void refreshExpressLRS(uint8_t newIndex){
 	fhssGenSequence(UID);
-	receiver.nonceRX = 0;
-	receiver.rssi = 0;
-	receiver.rssiFiltered = 0;
-	receiver.snr = 0;
+	receiver.nonce_RX = 0;
 	receiver.connected = ELRS_DISCONNECTED;
-	receiver.nonceDisconnected = 0;
+	receiver.nonce_disconnected = 0;
 
-	uint32_t timeMicros = micros();
-	phaseLocker.lastClockTimeMicros = timeMicros;
-	phaseLocker.lastPacketTimeMicros = timeMicros; // reset so we don't have crazy long differences
-	phaseLocker.lastUpdateClock = 0;
-	phaseLocker.rawPhaseDiff = 0;
+	uint32_t time_micros = micros();
+	phase_locker.last_clock_time_micros = time_micros;
+	phase_locker.last_packet_time_micros = time_micros; // reset so we don't have crazy long differences
+	phase_locker.raw_phase_diff = 0;
 
-	receiver.currentFreq = fhssGetInitialFreq();
+	receiver.current_freq = fhssGetInitialFreq();
 	sx1280_init(); // necessary in refresh?
 
-	changeRateIndex(newIndex, receiver.currentFreq, UID[5]);
+	changeRateIndex(newIndex, receiver.current_freq, UID[5]);
 }
 
 // run on sequence a little before when we think a packet should arrive,
 // so that we can change the frequency to ensure that we get all packets
 void clockPhaseUpdate(uint32_t timeMicros){
 	if(!isDisconnected()){
-		phaseLocker.rawPhaseDiff = getDeltaTime(phaseLocker.lastClockTimeMicros, phaseLocker.lastPacketTimeMicros);
-		if(phaseLocker.rawPhaseDiff > 1000000){
+		phase_locker.raw_phase_diff = getDeltaTime(phase_locker.last_clock_time_micros, phase_locker.last_packet_time_micros);
+		if(phase_locker.raw_phase_diff > DC_TIMEOUT_MICROS){
 			displayInt("DCED", 1);
 			disconnect(timeMicros);
 			return;
 		}
 
-		int32_t defaultInt = (int32_t)airRateConfig[receiver.rateIndex].interval;
+		int32_t default_interval = (int32_t)air_rate_config[receiver.rate_index].interval;
 		int32_t offset;
-		phaseLocker.rawPhaseDiff = phaseLocker.rawPhaseDiff % defaultInt;
-		int32_t phaseSigned = (int32_t)phaseLocker.rawPhaseDiff;
+		phase_locker.raw_phase_diff = phase_locker.raw_phase_diff % default_interval;
+		int32_t phase_signed = (int32_t)phase_locker.raw_phase_diff;
 
-		offset = defaultInt/2 - phaseSigned; // need to be half out of phase so that the interrupts do not coliide!!
-		offset = intClamp(offset, defaultInt/4, -defaultInt/4); // don't phase too much.
+		offset = default_interval/2 - phase_signed; // need to be half out of phase so that the interrupts do not coliide!!
+		offset = intClamp(offset, default_interval/MAX_SHIFT_SCALE, -default_interval/MAX_SHIFT_SCALE); // don't phase too much.
 
 		if(receiver.connected == ELRS_TENTATIVE && absInt(offset) < 50){
 			receiver.connected = ELRS_CONNECTED;
 			displayInt("CONNECTED!", 1);
 		}
-		if(offset > 10 || offset < -10){
-			__HAL_TIM_SET_AUTORELOAD(htim_elrs, defaultInt + (offset/3) - 1);
+		if(offset > LOCKED_ON_THRESHOLD || offset < -LOCKED_ON_THRESHOLD){
+			__HAL_TIM_SET_AUTORELOAD(htim_elrs, default_interval + (offset * OFFSET_SHIFT_KP) - 1);
 		}else{
 			// don't phase if already locked on
-			__HAL_TIM_SET_AUTORELOAD(htim_elrs, defaultInt - 1);
+			__HAL_TIM_SET_AUTORELOAD(htim_elrs, default_interval - 1);
 		}
-		phaseLocker.offset = offset;
+		phase_locker.offset = offset;
 	}else{
-		receiver.nonceDisconnected++;
-		phaseLocker.lastClockTimeMicros = timeMicros;
-		phaseLocker.lastPacketTimeMicros = timeMicros;
-		if(receiver.nonceDisconnected > (airRateConfig[receiver.rateIndex].rate * 11)/10){
-			receiver.rateIndex = (receiver.rateIndex + 1) % 4;
-			refreshExpressLRS(receiver.rateIndex);
+		receiver.nonce_disconnected++;
+		phase_locker.last_clock_time_micros = timeMicros;
+		phase_locker.last_packet_time_micros = timeMicros;
+		if(receiver.nonce_disconnected > (air_rate_config[receiver.rate_index].rate * 11)/10){
+			receiver.rate_index = (receiver.rate_index + 1) % 4;
+			refreshExpressLRS(receiver.rate_index);
 		}
 	}
 }
 
 // run when a packet is actually received
 void processRFPacket(uint8_t* packet, uint32_t timeMicros){
-	elrsOtaPacket_t * const otaPktPtr = (elrsOtaPacket_t * const) packet;
-
-	lastPacketMicros = timeMicros;
-	switch(otaPktPtr->type) {
+	elrsOtaPacket_t * const ota_pkt_ptr = (elrsOtaPacket_t * const) packet;
+	switch(ota_pkt_ptr->type) {
 	    case ELRS_SYNC_PACKET:
-	    	uint8_t sync_success = processSyncPacket(otaPktPtr, timeMicros);
-	    	if(sync_success){
-	    		lastSync = timeMicros;
-	    	}
+	    	processSyncPacket(ota_pkt_ptr, timeMicros);
 		    break;
 	    case ELRS_RC_DATA_PACKET:
-	    	if(receiver.switchMode == 0){
-	    		hybridWideNonceToSwitchIndex(receiver.nonceRX);
+	    	if(receiver.switch_mode == 0){
+	    		hybridWideNonceToSwitchIndex(receiver.nonce_RX);
 	    	}
-	    	memcpy((uint8_t *) rcPayload, (uint8_t *) packet, 8);
+	    	memcpy((uint8_t *) rc_payload, (uint8_t *) packet, 8);
 		    break;
 	    case ELRS_MSP_DATA_PACKET:
-	    	if (receiver.inBindingMode && otaPktPtr->msp_ul.packageIndex == 1 && otaPktPtr->msp_ul.payload[0] == ELRS_MSP_BIND) {
-			    uint8_t* packy = (uint8_t*)&otaPktPtr->msp_ul.payload[1];
+	    	if (receiver.in_binding_mode && ota_pkt_ptr->msp_ul.package_index == 1 && ota_pkt_ptr->msp_ul.payload[0] == ELRS_MSP_BIND) {
+			    uint8_t* packy = (uint8_t*)&ota_pkt_ptr->msp_ul.payload[1];
 			    processBindPacket(packy);
 			    char* data4 = "BIND PACK\n";
 			    CDC_Transmit_FS((uint8_t *)data4, strlen(data4));
@@ -155,7 +144,6 @@ void processRFPacket(uint8_t* packet, uint32_t timeMicros){
 	    default:
 	    	break;
 	}
-
 }
 
 void processBindPacket(uint8_t* packet){
@@ -164,10 +152,10 @@ void processBindPacket(uint8_t* packet){
 	UID[4] = packet[2];
 	UID[5] = packet[3];
 
-	receiver.inBindingMode = 0;
-	receiver.rateIndex = 0; // TEMP!!! make connection searching alg
+	receiver.in_binding_mode = 0;
+	receiver.rate_index = 0; // default value, will search for connection after
 	writeCurrentConfigsToFlash();
-	refreshExpressLRS(receiver.rateIndex);
+	refreshExpressLRS(receiver.rate_index);
 }
 
 uint8_t processSyncPacket(elrsOtaPacket_t * const otaPktPtr, uint32_t timeMicros){
@@ -177,18 +165,17 @@ uint8_t processSyncPacket(elrsOtaPacket_t * const otaPktPtr, uint32_t timeMicros
 	}
 	uint8_t config_write_needed = 0;
 
-	// need to change in loop
-	receiver.nextRateIndex = airRateIndexToIndex24(otaPktPtr->sync.rateIndex, receiver.rateIndex);
-	if(receiver.nextRateIndex != receiver.rateIndex){
+	receiver.next_rate_index = airRateIndexToIndex24(otaPktPtr->sync.rate_index, receiver.rate_index);
+	if(receiver.next_rate_index != receiver.rate_index){
 		config_write_needed = 1;
-		receiver.rateIndex = receiver.nextRateIndex;
+		receiver.rate_index = receiver.next_rate_index;
 	}
 
 	// need to update switch mode
-	uint8_t switchEncMode = otaPktPtr->sync.switchEncMode;
+	uint8_t switch_enc_mode = otaPktPtr->sync.switch_enc_mode;
 
-	if(switchEncMode != receiver.switchMode){
-		receiver.switchMode = switchEncMode;
+	if(switch_enc_mode != receiver.switch_mode){
+		receiver.switch_mode = switch_enc_mode;
 		config_write_needed = 1;
 	}
 
@@ -196,9 +183,9 @@ uint8_t processSyncPacket(elrsOtaPacket_t * const otaPktPtr, uint32_t timeMicros
 		writeCurrentConfigsToFlash();
 	}
 
-	if (receiver.nonceRX != otaPktPtr->sync.nonce || fhssIndex != otaPktPtr->sync.fhssIndex || receiver.connected == ELRS_DISCONNECTED) {
-		fhssIndex = (otaPktPtr->sync.fhssIndex) % seqCount;
-		receiver.nonceRX = otaPktPtr->sync.nonce;
+	if (receiver.nonce_RX != otaPktPtr->sync.nonce || fhss_index != otaPktPtr->sync.fhss_index || receiver.connected == ELRS_DISCONNECTED) {
+		fhss_index = (otaPktPtr->sync.fhss_index) % seq_count;
+		receiver.nonce_RX = otaPktPtr->sync.nonce;
 
 		if(receiver.connected == ELRS_DISCONNECTED){
 			tentativeConnection(timeMicros);
@@ -211,57 +198,56 @@ uint8_t processSyncPacket(elrsOtaPacket_t * const otaPktPtr, uint32_t timeMicros
 void tentativeConnection(uint32_t timeMicros){
 	receiver.connected = ELRS_TENTATIVE;
 
-	phaseLocker.lastClockTimeMicros = timeMicros;
-	phaseLocker.lastPacketTimeMicros = timeMicros;
-	phaseLocker.rawPhaseDiff = 0;
+	phase_locker.last_clock_time_micros = timeMicros;
+	phase_locker.last_packet_time_micros = timeMicros;
+	phase_locker.raw_phase_diff = 0;
 }
 
 void disconnect(uint32_t timeMicros){
 	receiver.connected = ELRS_DISCONNECTED;
-	phaseLocker.lastClockTimeMicros = timeMicros;
-	phaseLocker.lastPacketTimeMicros = timeMicros; // reset so we don't have crazy long differences
-	receiver.nonceRX = 0;
-	receiver.nonceDisconnected = 0;
-	setPrescaleForRateIndex(receiver.rateIndex);
-	phaseLocker.lastUpdateClock = 0;
-	phaseLocker.rawPhaseDiff = 0;
+	phase_locker.last_clock_time_micros = timeMicros;
+	phase_locker.last_packet_time_micros = timeMicros; // reset so we don't have crazy long differences
+	receiver.nonce_RX = 0;
+	receiver.nonce_disconnected = 0;
+	setPrescaleForRateIndex(receiver.rate_index);
+	phase_locker.raw_phase_diff = 0;
 
-	receiver.currentFreq = fhssGetInitialFreq();
-	sx1280_write_RF_frequency(receiver.currentFreq);
+	receiver.current_freq = fhssGetInitialFreq();
+	sx1280_write_RF_frequency(receiver.current_freq);
 }
 
 void writeCurrentConfigsToFlash(){
-	uint8_t buf[8] = {UID[0], UID[1], UID[2], UID[3], UID[4], UID[5], receiver.rateIndex, receiver.switchMode};
+	uint8_t buf[8] = {UID[0], UID[1], UID[2], UID[3], UID[4], UID[5], receiver.rate_index, receiver.switch_mode};
 	writeNewConfig(buf);
 }
 
 void changeRateIndex(uint8_t newIndex, uint32_t freq, uint8_t uid5){
-	receiver.rateIndex = newIndex;
-	elrsModSettings_t newSettings = airRateConfig[receiver.rateIndex];
-	receiver.modParams = newSettings;
+	receiver.rate_index = newIndex;
+	elrsModSettings_t newSettings = air_rate_config[receiver.rate_index];
+	receiver.mod_params = newSettings;
 	setPrescaleForRateIndex(newIndex);
-	sx1280_set_RF_rate(newSettings.sf, newSettings.bw, newSettings.cr, newSettings.preambleLen, freq, uid5 & 0x01);
+	sx1280_set_RF_rate(newSettings.sf, newSettings.bw, newSettings.cr, newSettings.preamble_len, freq, uid5 & 0x01);
 }
 
 void expressLrsSetRcDataFromPayload(uint16_t *rcData)
 {
-	volatile elrsOtaPacket_t * const otaPktPtr = (elrsOtaPacket_t * const) rcPayload;
-	unpackChannelDataHybridWide(rcData, otaPktPtr);
+	volatile elrsOtaPacket_t * const ota_pkt_ptr = (elrsOtaPacket_t * const) rc_payload;
+	unpackChannelDataHybridWide(rcData, ota_pkt_ptr);
 }
 
 void setBindingMode(){
-	if(!receiver.inBindingMode){
-		receiver.inBindingMode = 1;
-		memcpy(UID, BindingUID, 6);
+	if(!receiver.in_binding_mode){
+		receiver.in_binding_mode = 1;
+		memcpy(UID, binding_UID, 6);
 
-		refreshExpressLRS(bindRateIndex);
+		refreshExpressLRS(BIND_RATE_INDEX);
 	}
 }
 
 void exitBindMode(){
-	receiver.inBindingMode = 0;
-	receiver.rateIndex = 1;
-	refreshExpressLRS(receiver.rateIndex);
+	receiver.in_binding_mode = 0;
+	receiver.rate_index = 1;
+	refreshExpressLRS(receiver.rate_index);
 }
 
 uint8_t isDisconnected(){
@@ -272,23 +258,20 @@ uint8_t isDisconnected(){
 }
 
 uint8_t isBindingMode(){
-	return receiver.inBindingMode;
+	return receiver.in_binding_mode;
 }
 
 void setPrescaleForRateIndex(uint8_t index){
-	__HAL_TIM_SET_AUTORELOAD(htim_elrs, airRateConfig[index].interval - 1);
+	__HAL_TIM_SET_AUTORELOAD(htim_elrs, air_rate_config[index].interval - 1);
 }
 
 void setLastClockTime(uint32_t timeMicros){
-	phaseLocker.lastClockTimeMicros = timeMicros;
-	phaseLocker.lastUpdateClock = 1;
+	phase_locker.last_clock_time_micros = timeMicros;
 }
 
 void setLastPacketTime(uint32_t timeMicros){
-	phaseLocker.lastPacketTimeMicros = timeMicros;
-	phaseLocker.lastUpdateClock = 0;
+	phase_locker.last_packet_time_micros = timeMicros;
 }
-
 
 /**
  *
@@ -313,42 +296,42 @@ Approach:
 void fhssGenSequence(const uint8_t inputUID[])
 {
     seed = (((long)inputUID[2] << 24) + ((long)inputUID[3] << 16) + ((long)inputUID[4] << 8) + inputUID[5]) ^ ELRS_OTA_VERSION_ID;
-    seqCount = (256 / maxf(freqCount, 1)) * freqCount;
-    syncChannel = (freqCount / 2) + 1;
-    freqSpread = (freqStop - freqStart) * ELRS_FREQ_SPREAD_SCALE / maxf((freqCount - 1), 1);
+    seq_count = (256 / maxf(freq_count, 1)) * freq_count;
+    sync_channel = (freq_count / 2) + 1;
+    freq_spread = (freq_stop - freq_start) * ELRS_FREQ_SPREAD_SCALE / maxf((freq_count - 1), 1);
 
     // initialize the sequence array
-    for (uint16_t i = 0; i < seqCount; i++) {
-        if (i % freqCount == 0) {
-            fhssSequence[i] = syncChannel;
-        } else if (i % freqCount == syncChannel) {
-            fhssSequence[i] = 0;
+    for (uint16_t i = 0; i < seq_count; i++) {
+        if (i % freq_count == 0) {
+            fhss_sequence[i] = sync_channel;
+        } else if (i % freq_count == sync_channel) {
+            fhss_sequence[i] = 0;
         } else {
-            fhssSequence[i] = i % freqCount;
+            fhss_sequence[i] = i % freq_count;
         }
     }
 
-    for (uint16_t i = 0; i < seqCount; i++) {
+    for (uint16_t i = 0; i < seq_count; i++) {
         // if it's not the sync channel
-        if (i % freqCount != 0) {
-            uint8_t offset = (i / freqCount) * freqCount; // offset to start of current block
-            uint8_t rand = rngN(freqCount - 1) + 1; // random number between 1 and numFreqs
+        if (i % freq_count != 0) {
+            uint8_t offset = (i / freq_count) * freq_count; // offset to start of current block
+            uint8_t rand = rngN(freq_count - 1) + 1; // random number between 1 and numFreqs
 
             // switch this entry and another random entry in the same block
-            uint8_t temp = fhssSequence[i];
-            fhssSequence[i] = fhssSequence[offset + rand];
-            fhssSequence[offset + rand] = temp;
+            uint8_t temp = fhss_sequence[i];
+            fhss_sequence[i] = fhss_sequence[offset + rand];
+            fhss_sequence[offset + rand] = temp;
         }
     }
 }
 
 uint8_t doFhssIrq(){
-	receiver.nonceRX += 1;
-	uint8_t modResultFHSS = (receiver.nonceRX) % receiver.modParams.fhssHopInterval;
+	receiver.nonce_RX += 1;
+	uint8_t mod_result_FHSS = (receiver.nonce_RX) % receiver.mod_params.fhss_hop_interval;
 
-	if((receiver.inBindingMode == 0) && modResultFHSS == 0 && !isDisconnected()){
-		receiver.currentFreq = fhssGetNextFreq();
-		sx1280_write_RF_frequency(receiver.currentFreq);
+	if((receiver.in_binding_mode == 0) && mod_result_FHSS == 0 && !isDisconnected()){
+		receiver.current_freq = fhssGetNextFreq();
+		sx1280_write_RF_frequency(receiver.current_freq);
 		return 1;
 	}
 	return 0;
@@ -356,13 +339,13 @@ uint8_t doFhssIrq(){
 
 uint32_t fhssGetInitialFreq()
 {
-    return freqStart + (syncChannel * freqSpread / ELRS_FREQ_SPREAD_SCALE);
+    return freq_start + (sync_channel * freq_spread / ELRS_FREQ_SPREAD_SCALE);
 }
 
 uint32_t fhssGetNextFreq()
 {
-    fhssIndex = (fhssIndex + 1) % seqCount;
-    uint32_t freq = freqStart + (freqSpread * fhssSequence[fhssIndex] / ELRS_FREQ_SPREAD_SCALE);
+    fhss_index = (fhss_index + 1) % seq_count;
+    uint32_t freq = freq_start + (freq_spread * fhss_sequence[fhss_index] / ELRS_FREQ_SPREAD_SCALE);
     return freq;
 }
 

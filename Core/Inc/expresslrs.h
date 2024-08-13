@@ -25,6 +25,13 @@
 
 #define ELRS_MSP_BIND 0x09
 
+#define DC_TIMEOUT_MICROS 1000000
+#define LOCKED_ON_THRESHOLD 10
+#define MAX_SHIFT_SCALE 4
+#define OFFSET_SHIFT_KP 0.3333
+
+#define BIND_RATE_INDEX 3
+
 
 extern uint8_t isBinding;
 
@@ -45,7 +52,7 @@ typedef struct elrsOtaPacket_s {
     // The packet type must always be the low two bits of the first byte of the
     // packet to match the same placement in OTA_Packet8_s
     uint8_t type : 2,
-            crcHigh : 6;
+            crc_high : 6;
     union {
         /** PACKET_TYPE_RCDATA **/
         struct {
@@ -55,16 +62,16 @@ typedef struct elrsOtaPacket_s {
         } rc;
         /** PACKET_TYPE_MSP **/
         struct {
-            uint8_t packageIndex;
+            uint8_t package_index;
             uint8_t payload[ELRS_MSP_BYTES_PER_CALL];
         } msp_ul;
         /** PACKET_TYPE_SYNC **/
         struct {
-            uint8_t fhssIndex;
+            uint8_t fhss_index;
             uint8_t nonce;
-            uint8_t switchEncMode : 1,
-                    newTlmRatio : 3,
-                    rateIndex : 4;
+            uint8_t switch_enc_mode : 1,
+                    new_tlm_ratio : 3,
+                    rate_index : 4;
             uint8_t UID3;
             uint8_t UID4;
             uint8_t UID5;
@@ -72,15 +79,15 @@ typedef struct elrsOtaPacket_s {
         /** PACKET_TYPE_TLM **/
         struct {
             uint8_t type : ELRS_TELEMETRY_SHIFT,
-                    packageIndex : (8 - ELRS_TELEMETRY_SHIFT);
+                    package_index : (8 - ELRS_TELEMETRY_SHIFT);
             union {
                 struct {
                     uint8_t uplink_RSSI_1 : 7,
                             antenna : 1;
                     uint8_t uplink_RSSI_2 : 7,
-                            modelMatch : 1;
+                            model_match : 1;
                     uint8_t lq : 7,
-                            mspConfirm : 1;
+                            msp_confirm : 1;
                     int8_t SNR;
                     uint8_t free;
                 } ul_link_stats;
@@ -88,7 +95,7 @@ typedef struct elrsOtaPacket_s {
             };
         } tlm_dl;
     };
-    uint8_t crcLow;
+    uint8_t crc_low;
 } __attribute__ ((__packed__)) elrsOtaPacket_t;
 
 // different settings for rate indices of expressLRS
@@ -99,8 +106,8 @@ typedef struct elrsModSettings_s {
     uint8_t sf;
     uint8_t cr;
     uint32_t interval;                  // interval in us seconds that corresponds to that frequency
-    uint8_t fhssHopInterval;            // every X packets we hop to a new frequency. Max value of 16 since only 4 bits have been assigned in the sync package.
-    uint8_t preambleLen;
+    uint8_t fhss_hop_interval;            // every X packets we hop to a new frequency. Max value of 16 since only 4 bits have been assigned in the sync package.
+    uint8_t preamble_len;
 } elrsModSettings_t;
 
 typedef struct clockScaleSettings_s {
@@ -110,29 +117,24 @@ typedef struct clockScaleSettings_s {
 } clockScaleSettings_t;
 
 typedef struct elrsReceiver_s {
-	uint32_t currentFreq;
-	uint8_t rateIndex;
-	uint8_t nextRateIndex;
+	uint32_t current_freq;
+	uint8_t rate_index;
+	uint8_t next_rate_index;
 	connectionState_e connected;
 
-	uint32_t nonceRX; // frequency index that we think we are on, without sync packet
-	uint32_t nonceDisconnected;
+	uint32_t nonce_RX; // frequency index that we think we are on, without sync packet
+	uint32_t nonce_disconnected;
 
-	elrsModSettings_t modParams;
+	elrsModSettings_t mod_params;
 
-	int8_t rssi;
-	int8_t snr;
-	int8_t rssiFiltered;
-
-	uint8_t inBindingMode;
-	uint8_t switchMode;
+	uint8_t in_binding_mode;
+	uint8_t switch_mode;
 } elrsReceiver_t;
 
 typedef struct elrsPhase_s {
-	uint32_t lastPacketTimeMicros;
-	uint32_t lastClockTimeMicros;
-	uint32_t rawPhaseDiff; // lpf??? also deltaPhaseDiff?
-	uint8_t lastUpdateClock;
+	uint32_t last_packet_time_micros;
+	uint32_t last_clock_time_micros;
+	uint32_t raw_phase_diff;
 	int32_t offset;
 }elrsPhase_t;
 
