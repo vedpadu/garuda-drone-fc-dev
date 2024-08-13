@@ -61,7 +61,8 @@ PIDController throttle_PID = {PID_THROTTLE_KP, PID_THROTTLE_KI, PID_THROTTLE_KD,
 						PID_THROTTLE_LIM_MIN_INT, PID_THROTTLE_LIM_MAX_INT,
 						SAMPLE_TIME_INNER };
 
-void controlsInit(){
+void controlsInit()
+{
 	HAL_TIM_Base_Start_IT(htim_control_loop);
 
 	PIDController_Init(&roll_motor_PID);
@@ -74,7 +75,9 @@ void controlsInit(){
 
 }
 
-void controlsInnerLoop(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRate, float32_t* currentAccel, quaternion_t attitude){
+void controlsInnerLoop(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRate, float32_t* currentAccel,
+							quaternion_t attitude)
+{
 	handleRCInputs(rcData);
 	drone_armed = rc_inputs[SWITCH_A_IND];
 	if(!drone_armed){
@@ -127,7 +130,8 @@ void controlsInnerLoop(uint16_t* rcData, uint16_t* motorOut, float32_t* currentR
 	getMotorOutputs(motor_setpoints, motorOut);
 }
 
-void findHoverThrottle(quaternion_t attitude, float32_t* currentAccel){
+void findHoverThrottle(quaternion_t attitude, float32_t* currentAccel)
+{
 	float32_t vec[3] = {0.0, 0.0, -1.0};
 	quaternion_t inverseEst = quatInverse(attitude);
 	rotateVector3ByQuaternion(vec, inverseEst);
@@ -139,7 +143,8 @@ void findHoverThrottle(quaternion_t attitude, float32_t* currentAccel){
 	}
 }
 
-void controlsOuterUpdate(quaternion_t attitude, float32_t* accel){
+void controlsOuterUpdate(quaternion_t attitude, float32_t* accel)
+{
 	float32_t pitchRate = -(float32_t)rc_inputs[PITCH_STICK_IND]/500.0;
 	float32_t rollRate = (float32_t)rc_inputs[ROLL_STICK_IND]/500.0;
 	float32_t yawRate = (float32_t)rc_inputs[YAW_STICK_IND]/200.0;
@@ -159,7 +164,8 @@ void controlsOuterUpdate(quaternion_t attitude, float32_t* accel){
 }
 
 // throttle controller -> inner loop
-void getDesiredThrottle(float32_t dotTarget, quaternion_t attitude, float32_t* accel){
+void getDesiredThrottle(float32_t dotTarget, quaternion_t attitude, float32_t* accel)
+{
 	float32_t vec[3] = {0.0, 0.0, -1.0};
 	quaternion_t inverseEst = quatInverse(attitude);
 	rotateVector3ByQuaternion(vec, inverseEst); // verify this is working
@@ -183,7 +189,8 @@ void getDesiredThrottle(float32_t dotTarget, quaternion_t attitude, float32_t* a
 }
 
 // angle to rate controls -> outer loop
-void getDesiredRates(float32_t* eulerAtt){
+void getDesiredRates(float32_t* eulerAtt)
+{
 	PIDController_Update(&roll_rate_PID, (desired_attitude.roll), eulerAtt[0]);
 	PIDController_Update(&pitch_rate_PID, desired_attitude.pitch, eulerAtt[1]);
 	PIDController_Update(&yaw_rate_PID, desired_attitude.yaw, eulerAtt[2]);
@@ -194,7 +201,8 @@ void getDesiredRates(float32_t* eulerAtt){
 }
 
 // rate to motor setpoints -> inner loop
-void achieveDesiredRates(float32_t* currentRate){
+void achieveDesiredRates(float32_t* currentRate)
+{
 	PIDController_Update(&roll_motor_PID, desired_rate.rateRoll, currentRate[0]);
 	PIDController_Update(&pitch_motor_PID, desired_rate.ratePitch, currentRate[1]);
 	PIDController_Update(&yaw_motor_PID, desired_rate.rateYaw, currentRate[2]);
@@ -205,7 +213,8 @@ void achieveDesiredRates(float32_t* currentRate){
 }
 
 // clamps max velocity for rc inputs
-void handleRCInputs(uint16_t* rcData){
+void handleRCInputs(uint16_t* rcData)
+{
 	int i;
 	for(i = 0;i < 4;i++){
 		if(i != THROTTLE_STICK_IND){
@@ -237,7 +246,8 @@ void handleRCInputs(uint16_t* rcData){
 }
 
 // motor mixer
-void getMotorOutputs(outRates_t set, uint16_t* motorOut){
+void getMotorOutputs(outRates_t set, uint16_t* motorOut)
+{
 	float32_t out[MOTOR_COUNT] = {0};
 	out[0] = (set.throttle + set.roll + set.pitch - set.yaw) * 2000;
 	out[1] = (set.throttle + set.roll - set.pitch + set.yaw) * 2000;

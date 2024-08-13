@@ -1,14 +1,16 @@
 /*
- * flashMemoryConfig.h
+ * flash_memory_handler.h
  *
  *  Created on: Jul 20, 2024
- *      Author: vedpa
+ *      Author: vedpadu
  */
 
 #ifndef INC_FLASH_MEMORY_HANDLER_H_
 #define INC_FLASH_MEMORY_HANDLER_H_
 
 #include "main.h"
+
+#define EMPTY_VALUE 0xFFFFFFFF
 
 uint8_t initFlashMemoryConfig(uint8_t sizeWords);
 void getFirstFreeAddress();

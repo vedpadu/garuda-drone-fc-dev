@@ -71,7 +71,8 @@ float32_t kalman_accel[3] = {0};
 int kalman_initialized = 0;
 
 void initKalman(quaternion_t initialEst, float32_t estimateCov, float32_t gyroCov, float32_t gyroBiasCov,
-		float32_t accelProcCov, float32_t accelBiasCov, float32_t accelObsCov){
+		float32_t accelProcCov, float32_t accelBiasCov, float32_t accelObsCov)
+{
 	estimate = initialEst;
 	estimate_covariance = generateDiagonalMatrix(estimate_covar_mat[0], 15, estimateCov);
 
@@ -109,7 +110,8 @@ void initKalman(quaternion_t initialEst, float32_t estimateCov, float32_t gyroCo
 }
 
 // assumes Q instance already initialized
-arm_matrix_instance_f32 processCovariance(float32_t time_delta){
+arm_matrix_instance_f32 processCovariance(float32_t time_delta)
+{
 	diagonalMat(Q_mat[0], 15, 0.0);
 	injectMatrix(Q_mat[0], addMatrices(createScaleMatrix(&gyro_covariance, time_delta, 3), createScaleMatrix(&gyro_bias_covariance, pow(time_delta, 3.0) / 3.0, 3), 3),
 			0, 0, 15, 3, 1);
@@ -141,7 +143,8 @@ arm_matrix_instance_f32 processCovariance(float32_t time_delta){
 }
 
 // TODO: check function statuses
-void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t timeDelta){
+void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t timeDelta)
+{
 
 	// create a copy of the measurement so that the gyro and accelerometer raw measurements are not changed
 	subtractFromVector(kalman_accel, kalman_accel, 3);
@@ -226,7 +229,8 @@ void updateKalman(float32_t gyroMeas[3], float32_t accMeas[3], float32_t timeDel
 }
 
 // If the accelerometer reads values that are not stationary, generate a larger scalar to increase the covariance
-float32_t getAccelHealth(float32_t* acc, float32_t* gyr){
+float32_t getAccelHealth(float32_t* acc, float32_t* gyr)
+{
 	float32_t mag = acc[0] * acc[0] + acc[1] * acc[1] + acc[2] * acc[2];
 	float32_t diff = mag - 1.0;
 	diff = absVal(diff);

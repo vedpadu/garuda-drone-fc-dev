@@ -8,12 +8,16 @@
 
 uint8_t packet_pointer_buf[4] = {0x00};
 
-void sx1280_init(){
+void sx1280_init()
+{
 	sx1280_set_RF_rate(LORA_SF_8, LORA_BW_800, LORA_CR_LI_4_8, 12, fhssGetInitialFreq(), 1);
 }
 
 //TODO: interrupt clear
-void sx1280_set_RF_rate(uint8_t sF, uint8_t bW, uint8_t cR, uint8_t preambleLen, uint32_t freqReg, uint8_t isInverted){
+void sx1280_set_RF_rate(uint8_t sF, uint8_t bW, uint8_t cR,
+							uint8_t preambleLen, uint32_t freqReg,
+								uint8_t isInverted)
+{
 	sx1280_set_high_power();
 	sx1280_set_standby();
 	sx1280_set_packet_type_LORA();
@@ -28,7 +32,8 @@ void sx1280_set_RF_rate(uint8_t sF, uint8_t bW, uint8_t cR, uint8_t preambleLen,
 	sx1280_set_RX_mode_no_timeout();
 }
 
-void sx1280_read_interrupt(uint8_t* out){
+void sx1280_read_interrupt(uint8_t* out)
+{
 	uint8_t clear_irq[3] = {SX1280_CLEAR_INTERRUPTS, 0xFF, 0xFF};
 	HAL_GPIO_WritePin(CS_GPIO_Port_SX1280, CS_Pin_SX1280, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(hspi_receiver, clear_irq, 3, 10);
@@ -48,36 +53,42 @@ void sx1280_read_interrupt(uint8_t* out){
 	memcpy((uint8_t *) out, (uint8_t *) transmit_buf_2, 8);
 }
 
-uint8_t sx1280_get_status(){
-	uint8_t getStatus = SX1280_GET_STATUS;
+uint8_t sx1280_get_status()
+{
+	uint8_t get_status_reg = SX1280_GET_STATUS;
 	uint8_t status_buf[1] = {0x00};
 	HAL_GPIO_WritePin(CS_GPIO_Port_SX1280, CS_Pin_SX1280, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(hspi_receiver, &getStatus, 1, 10);
+	HAL_SPI_Transmit(hspi_receiver, &get_status_reg, 1, 10);
 	HAL_SPI_Receive(hspi_receiver, status_buf, 1, 10);
 	HAL_GPIO_WritePin(CS_GPIO_Port_SX1280, CS_Pin_SX1280, GPIO_PIN_SET);
 	return status_buf[0];
 }
 
 // sets RX Mode without any timeout, continuous listening
-void sx1280_set_RX_mode_no_timeout(){
+void sx1280_set_RX_mode_no_timeout()
+{
 	uint8_t set_rx_mode_buff[4] = {SX1280_SET_RX_MODE, 0x00, 0xFF, 0xFF};
 	sx1280_send_SPI_buffer(set_rx_mode_buff, 4);
 }
 
 // boof, i just send RX done interrupts to all DIO pins because I cannot be bothered to test which DIO Pin is actually wired to the interrupt
-void sx1280_configure_EXTI(){
+void sx1280_configure_EXTI()
+{
 	// interrupt mask is 0x0002, as the rxdone interrupt is on the second bit of the mask, explained in the data sheet
 	// TODO: make this method not constant for other receiver necessities, but atm this script is just for the receiver.
 	uint8_t irq_configure_buf[9] = {SX1280_SET_DIO_IRQ_PARAMS, 0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00, 0x02};
 	sx1280_send_SPI_buffer(irq_configure_buf, 9);
 }
 
-void sx1280_set_LORA_packet_parameters(uint8_t preambleLen, uint8_t headerType, uint8_t payloadLen, uint8_t crcEnabled, uint8_t invertIQ){
+void sx1280_set_LORA_packet_parameters(uint8_t preambleLen, uint8_t headerType, uint8_t payloadLen,
+											uint8_t crcEnabled, uint8_t invertIQ)
+{
 	uint8_t write_packet_params_buff[8] = {SX1280_SET_PACKET_PARAMS, preambleLen, headerType, payloadLen, crcEnabled, invertIQ, 0x00, 0x00};
 	sx1280_send_SPI_buffer(write_packet_params_buff, 8);
 }
 
-void sx1280_set_LORA_mod_parameters(uint8_t sF, uint8_t bW, uint8_t cR){
+void sx1280_set_LORA_mod_parameters(uint8_t sF, uint8_t bW, uint8_t cR)
+{
 	uint8_t lora_mod_params_buff[4] = {SX1280_SET_MODULATION_PARAMS, sF, bW, cR};
 	sx1280_send_SPI_buffer(lora_mod_params_buff, 4);
 
@@ -99,13 +110,15 @@ void sx1280_set_LORA_mod_parameters(uint8_t sF, uint8_t bW, uint8_t cR){
 	sx1280_write_register(0x093c, freq_comp);
 }
 
-void sx1280_set_standby(){
+void sx1280_set_standby()
+{
 	uint8_t standby_set_buff[2] = {SX1280_SET_STANDBY, 0x00};
 	sx1280_send_SPI_buffer(standby_set_buff, 2);
 }
 
 // could be modular but I don't care.
-void sx1280_set_packet_type_LORA(){
+void sx1280_set_packet_type_LORA()
+{
 	uint8_t packet_type_buff[2] = {SX1280_SET_PACKET_TYPE, 0x01};
 	sx1280_send_SPI_buffer(packet_type_buff, 2);
 }
@@ -123,7 +136,8 @@ uint8_t sx1280_poll_busy(void)
     return 1;
 }
 
-void sx1280_write_RF_frequency(uint32_t freqReg){
+void sx1280_write_RF_frequency(uint32_t freqReg)
+{
 	uint8_t buf[4] = {SX1280_RADIO_SET_RFFREQUENCY};
 
 	buf[1] = (uint8_t)((freqReg >> 16) & 0xFF);
@@ -133,7 +147,8 @@ void sx1280_write_RF_frequency(uint32_t freqReg){
 	sx1280_send_SPI_buffer(buf, 4);
 }
 
-void sx1280_write_register(uint16_t reg, uint8_t data){
+void sx1280_write_register(uint16_t reg, uint8_t data)
+{
 	uint8_t buf[4] = {SX1280_WRITE_REGISTER};
 	buf[1] = (uint8_t)((reg >> 8) & 0xFF);
 	buf[2] = (uint8_t)((reg) & 0xFF);
@@ -142,7 +157,8 @@ void sx1280_write_register(uint16_t reg, uint8_t data){
 	sx1280_send_SPI_buffer(buf, 4);
 }
 
-uint8_t sx1280_read_register(uint16_t reg){
+uint8_t sx1280_read_register(uint16_t reg)
+{
 	uint8_t read_buf[5] = {0x00};
 	uint8_t buf[5] = {SX1280_READ_REGISTER};
 
@@ -157,12 +173,14 @@ uint8_t sx1280_read_register(uint16_t reg){
 	return read_buf[4];
 }
 
-void sx1280_set_high_power(){
+void sx1280_set_high_power()
+{
 	sx1280_write_register(0x0891, (sx1280_read_register(0x0891) | 0xC0));
 }
 
 //TODO: better delays
-void sx1280_send_SPI_buffer(uint8_t* buf, uint8_t size){
+void sx1280_send_SPI_buffer(uint8_t* buf, uint8_t size)
+{
 	HAL_GPIO_WritePin(CS_GPIO_Port_SX1280, CS_Pin_SX1280, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(hspi_receiver, buf, size, 10);
 	HAL_GPIO_WritePin(CS_GPIO_Port_SX1280, CS_Pin_SX1280, GPIO_PIN_SET);

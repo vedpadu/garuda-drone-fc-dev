@@ -14,7 +14,6 @@
 "./Core/Src/kalman.o"
 "./Core/Src/main.o"
 "./Core/Src/math_util.o"
-"./Core/Src/output_handler.o"
 "./Core/Src/pid.o"
 "./Core/Src/spi.o"
 "./Core/Src/stm32f4xx_hal_msp.o"

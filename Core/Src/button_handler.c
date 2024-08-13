@@ -12,7 +12,8 @@ int button_press_burst_count = 0;
 
 
 
-void processButtonPress(uint32_t timeMicros){
+void processButtonPress(uint32_t timeMicros)
+{
 	if(getDeltaTime(timeMicros, last_button_press_micros) / 1000 < MULTI_CLICK_THRESHOLD_MILLIS){
 		button_press_burst_count++;
 	}else{

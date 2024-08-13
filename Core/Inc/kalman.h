@@ -12,6 +12,13 @@
 #include "arm_math.h"
 #include "math_util.h"
 
+#define ESTIMATE_COV 0.0
+#define GYRO_COV 0.004
+#define GYRO_BIAS_COV 0.000005
+#define ACCEL_PROC_COV 0.005
+#define ACCEL_BIAS_COV 0.0
+#define ACCEL_OBS_COV 0.01
+
 #define ACCEL_HEALTH_COEFFICIENT 15.0
 
 extern quaternion_t estimate;

@@ -7,21 +7,24 @@
 
 #include "math_util.h"
 
-void addToVector(float32_t* vec1, float32_t* vec2, uint8_t len){
+void addToVector(float32_t* vec1, float32_t* vec2, uint8_t len)
+{
 	int i;
 	for(i = 0;i < len;i++){
 		vec1[i] += vec2[i];
 	}
 }
 
-void subtractFromVector(float32_t* vec1, float32_t* vec2, uint8_t len){
+void subtractFromVector(float32_t* vec1, float32_t* vec2, uint8_t len)
+{
 	int i;
 	for(i = 0;i < len;i++){
 		vec1[i] -= vec2[i];
 	}
 }
 
-float32_t* vector3Add(float32_t* vec1, float32_t* vec2, float32_t* out){
+float32_t* vector3Add(float32_t* vec1, float32_t* vec2, float32_t* out)
+{
 	int i;
 	for(i = 0;i < 3;i++){
 		out[i] = vec1[i] + vec2[i];
@@ -29,21 +32,24 @@ float32_t* vector3Add(float32_t* vec1, float32_t* vec2, float32_t* out){
 	return out;
 }
 
-float32_t* vector3Cross(float32_t* vec1, float32_t* vec2, float32_t* out){
+float32_t* vector3Cross(float32_t* vec1, float32_t* vec2, float32_t* out)
+{
 	out[0] = vec1[1] * vec2[2] - vec2[1] * vec1[2];
 	out[1] = -vec1[0] * vec2[2] + vec2[0] * vec1[2];
 	out[2] = vec1[0] * vec2[1] - vec2[0] * vec1[1];
 	return out;
 }
 
-float32_t* vector3Scale(float32_t* vec, float32_t scale, float32_t* out){
+float32_t* vector3Scale(float32_t* vec, float32_t scale, float32_t* out)
+{
 	out[0] = vec[0] * scale;
 	out[1] = vec[1] * scale;
 	out[2] = vec[2] * scale;
 	return out;
 }
 
-float32_t vectorDot(float32_t* vec1, float32_t* vec2, uint8_t len){
+float32_t vectorDot(float32_t* vec1, float32_t* vec2, uint8_t len)
+{
 	float32_t prod = 0.0;
 	int i;
 	for(i = 0;i < len;i++){
@@ -52,7 +58,9 @@ float32_t vectorDot(float32_t* vec1, float32_t* vec2, uint8_t len){
 	return prod;
 }
 // IMPORTANT: DATA MUST BE FREED AFTER USE
-arm_matrix_instance_f32 skewSymmetric(float32_t* v){
+// ownership passed to user
+arm_matrix_instance_f32 skewSymmetric(float32_t* v)
+{
 	float32_t* mat = calloc(9, sizeof(float32_t));
 	mat[1] = -v[2];
 	mat[2] = v[1];
@@ -66,7 +74,9 @@ arm_matrix_instance_f32 skewSymmetric(float32_t* v){
 }
 
 // IMPORTANT: DATA MUST BE FREED AFTER USE
-arm_matrix_instance_f32 quatToMatrix(quaternion_t q){
+// ownership passes to user
+arm_matrix_instance_f32 quatToMatrix(quaternion_t q)
+{
 	arm_matrix_instance_f32 mat1;
 	arm_matrix_instance_f32 mat2;
 	arm_matrix_instance_f32 mat3;
@@ -88,7 +98,9 @@ arm_matrix_instance_f32 quatToMatrix(quaternion_t q){
 }
 
 // IMPORTANT: DATA MUST BE FREED AFTER USE
-arm_matrix_instance_f32 outerProductVec3(float32_t* vec1, float32_t* vec2){
+// ownership passed to user
+arm_matrix_instance_f32 outerProductVec3(float32_t* vec1, float32_t* vec2)
+{
 	float32_t* mat = calloc(9, sizeof(float32_t));
 	int x;
 	int y;
@@ -104,14 +116,16 @@ arm_matrix_instance_f32 outerProductVec3(float32_t* vec1, float32_t* vec2){
 
 // assumes matrix already initialized with zeros
 // use 1.0 as value to create an identity matrix
-void diagonalMat(float32_t* matrix, uint8_t size, float32_t value){
+void diagonalMat(float32_t* matrix, uint8_t size, float32_t value)
+{
 	int i;
 	for(i = 0;i < size;i++){
 		matrix[i * size + i] = value;
 	}
 }
 
-arm_matrix_instance_f32 generateDiagonalMatrix(float32_t* matrix, uint8_t size, float32_t value){
+arm_matrix_instance_f32 generateDiagonalMatrix(float32_t* matrix, uint8_t size, float32_t value)
+{
 	arm_matrix_instance_f32 instance;
 	diagonalMat(matrix, size, value);
 	arm_mat_init_f32(&instance, size, size, matrix);
@@ -119,7 +133,8 @@ arm_matrix_instance_f32 generateDiagonalMatrix(float32_t* matrix, uint8_t size, 
 }
 
 // maybe make these
-arm_matrix_instance_f32 createScaleMatrix(arm_matrix_instance_f32* instanceIn, float32_t scaleFactor, uint8_t size){
+arm_matrix_instance_f32 createScaleMatrix(arm_matrix_instance_f32* instanceIn, float32_t scaleFactor, uint8_t size)
+{
 	arm_matrix_instance_f32 instanceOut;
 	float32_t* mat = malloc(size * size * sizeof(float32_t));
 	arm_mat_init_f32(&instanceOut, size, size, mat);
@@ -128,7 +143,8 @@ arm_matrix_instance_f32 createScaleMatrix(arm_matrix_instance_f32* instanceIn, f
 }
 
 // generally only called for malloced/calloced matrices atm, be careful to not free stack data
-float32_t* addMatrices(arm_matrix_instance_f32 in1, arm_matrix_instance_f32 in2, uint8_t size){
+float32_t* addMatrices(arm_matrix_instance_f32 in1, arm_matrix_instance_f32 in2, uint8_t size)
+{
 	arm_matrix_instance_f32 instanceOut;
 	float32_t* mat = malloc(size * size * sizeof(float32_t));
 	arm_mat_init_f32(&instanceOut, size, size, mat);
@@ -141,7 +157,8 @@ float32_t* addMatrices(arm_matrix_instance_f32 in1, arm_matrix_instance_f32 in2,
 
 
 // Inserts a smaller square matrix into a larger square matrix at a specific position. Can choose to free the data in the smaller matrix.
-void injectMatrix(float32_t* outMat, float32_t* inMat, uint8_t y0, uint8_t x0, uint8_t sizeOut, uint8_t sizeIn, uint8_t doFree){
+void injectMatrix(float32_t* outMat, float32_t* inMat, uint8_t y0, uint8_t x0, uint8_t sizeOut, uint8_t sizeIn, uint8_t doFree)
+{
 	int x;
 	int y;
 	for(y = 0;y < sizeIn;y++){
@@ -155,7 +172,8 @@ void injectMatrix(float32_t* outMat, float32_t* inMat, uint8_t y0, uint8_t x0, u
 }
 
 // Scalar multiply for quaternion
-quaternion_t quatMultiplyScalar(quaternion_t q, float32_t val){
+quaternion_t quatMultiplyScalar(quaternion_t q, float32_t val)
+{
 	q.vec[0] = q.vec[0]*val;
 	q.vec[1] = q.vec[1]*val;
 	q.vec[2] = q.vec[2]*val;
@@ -164,7 +182,8 @@ quaternion_t quatMultiplyScalar(quaternion_t q, float32_t val){
 }
 
 // Scalar divide for quaternion
-quaternion_t quatDivideScalar(quaternion_t q, float32_t val){
+quaternion_t quatDivideScalar(quaternion_t q, float32_t val)
+{
 	q.vec[0] = q.vec[0]/val;
 	q.vec[1] = q.vec[1]/val;
 	q.vec[2] = q.vec[2]/val;
@@ -173,22 +192,26 @@ quaternion_t quatDivideScalar(quaternion_t q, float32_t val){
 }
 
 // Quaternion square magnitude
-float32_t quatSquareMag(quaternion_t q){
+float32_t quatSquareMag(quaternion_t q)
+{
 	return q.vec[0] * q.vec[0] + q.vec[1] * q.vec[1] + q.vec[2] * q.vec[2] + q.w * q.w;
 }
 
 // Get the conjugate of a quaternion
-quaternion_t quatConjugate(quaternion_t q){
+quaternion_t quatConjugate(quaternion_t q)
+{
 	quaternion_t conj = {q.w, {-q.vec[0], -q.vec[1], -q.vec[2]}};
 	return conj;
 }
 
 // Normalize a quaternion
-void normalizeQuaternion(quaternion_t* q){
+void normalizeQuaternion(quaternion_t* q)
+{
 	*q = quatDivideScalar(*q, pow(quatSquareMag(*q), 0.5));
 }
 
-void quatToEuler(quaternion_t q, float32_t* outEuler){
+void quatToEuler(quaternion_t q, float32_t* outEuler)
+{
 
 	float32_t roll = atan2(2*(q.w*q.vec[0] + q.vec[1]*q.vec[2]), 1 - 2*(q.vec[0]*q.vec[0] + q.vec[1]*q.vec[1]));
 	outEuler[0] = roll;
@@ -202,7 +225,8 @@ void quatToEuler(quaternion_t q, float32_t* outEuler){
 }
 
 // Inverse quaternion
-quaternion_t quatInverse(quaternion_t q){
+quaternion_t quatInverse(quaternion_t q)
+{
 	float32_t ss = quatSquareMag(q);
 	if(ss > 0){
 		quaternion_t conj = quatConjugate(q);
@@ -216,7 +240,8 @@ quaternion_t quatInverse(quaternion_t q){
 }
 
 // Multiply two quaternions
-quaternion_t quatMultiply(quaternion_t q1, quaternion_t q2){
+quaternion_t quatMultiply(quaternion_t q1, quaternion_t q2)
+{
 	float32_t w = q1.w * q2.w - vectorDot(q1.vec, q2.vec, 3);
 	float32_t prod1[3] = {0};
 	float32_t prod2[3] = {0};
@@ -230,7 +255,8 @@ quaternion_t quatMultiply(quaternion_t q1, quaternion_t q2){
 }
 
 // Rotate a vector by a quaternion
-void rotateVector3ByQuaternion(float32_t v[3], quaternion_t q) {
+void rotateVector3ByQuaternion(float32_t v[3], quaternion_t q)
+{
     quaternion_t v_q = {0, {v[0], v[1], v[2]}}; // Convert vector to quaternion
 
     quaternion_t q_inv = quatInverse(q);
@@ -244,20 +270,23 @@ void rotateVector3ByQuaternion(float32_t v[3], quaternion_t q) {
 }
 
 // Add one quaternion to another
-void addToQuat(quaternion_t* q1, quaternion_t q2){
+void addToQuat(quaternion_t* q1, quaternion_t q2)
+{
 	q1->w += q2.w;
 	addToVector(q1->vec, q2.vec, 3);
 }
 
 
-float32_t absVal(float32_t val){
+float32_t absVal(float32_t val)
+{
 	if(val < 0){
 		return -val;
 	}
 	return val;
 }
 
-int32_t absInt(int32_t val){
+int32_t absInt(int32_t val)
+{
 	if(val < 0){
 		return -val;
 	}
@@ -265,7 +294,8 @@ int32_t absInt(int32_t val){
 }
 
 
-int intClamp(int in, int max, int min){
+int intClamp(int in, int max, int min)
+{
 	if(in > max){
 		in = max;
 	}
@@ -275,7 +305,8 @@ int intClamp(int in, int max, int min){
 	return in;
 }
 
-float32_t float32Clamp(float32_t in, float32_t max, float32_t min){
+float32_t float32Clamp(float32_t in, float32_t max, float32_t min)
+{
 	if(in > max){
 		in = max;
 	}

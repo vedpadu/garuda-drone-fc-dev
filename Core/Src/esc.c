@@ -21,14 +21,16 @@ motorPWMTim_t motor_PWM_tims[4] = {
 		};
 
 
-void init_ESC(){
+void init_ESC()
+{
 	HAL_TIM_Base_Start_IT(htim_esc_kalman);
 }
 
 // deals with the initialization of the ESC
 // this runs 4 times per millisecond, such that each motor will be updated each millisecond.
 // this is done so that the DMA streams do not block each other and screw up the motor initialization ( more of a precaution than a necessity)
-void arm_ESC() {
+void arm_ESC()
+{
 	arming_ctr++;
 	uint8_t motor_index = arming_ctr % MOTOR_COUNT;
 	// wait power up
@@ -92,7 +94,8 @@ void arm_ESC() {
 }
 
 // sends motor values to dma streams and performs dshot
-void set_esc_outputs(uint16_t *desiredOut) {
+void set_esc_outputs(uint16_t *desiredOut)
+{
 	if (motors_armed) {
 		memcpy(motor_outputs, desiredOut, MOTOR_COUNT * sizeof(uint16_t));
 		int i;
@@ -105,7 +108,8 @@ void set_esc_outputs(uint16_t *desiredOut) {
 }
 
 // constructs a dshot packet for a given value
-void dshot600(uint32_t *motor, uint16_t value) {
+void dshot600(uint32_t *motor, uint16_t value)
+{
 	uint16_t packet = value << 1;
 
 	// compute checksum

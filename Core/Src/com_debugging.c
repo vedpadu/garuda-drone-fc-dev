@@ -7,7 +7,8 @@
 
 #include "com_debugging.h"
 
-void displayInt(char* desc, int val){
+void displayInt(char* desc, int val)
+{
 	int len = snprintf(NULL, 0, "%s,%d\n", desc, val);
 	char *str = malloc(len + 2);
 	snprintf(str, len + 2, "%s,%d\n", desc, val);
@@ -53,7 +54,8 @@ char *convertUint16(uint16_t *a)
   return buffer2;
 }
 
-void displayInts(char* desc, int val, char* desc2, int val2){
+void displayInts(char* desc, int val, char* desc2, int val2)
+{
 	int len = snprintf(NULL, 0, "%s: %d %s: %d\n", desc, val, desc2, val2);
 	char *str = malloc(len + 2);
 	snprintf(str, len + 2, "%s: %d %s: %d\n", desc, val, desc2, val2);
@@ -61,7 +63,8 @@ void displayInts(char* desc, int val, char* desc2, int val2){
 	free(str);
 }
 
-void displayInts3(char* desc, int val, char* desc2, int val2, char* desc3, int val3){
+void displayInts3(char* desc, int val, char* desc2, int val2, char* desc3, int val3)
+{
 	int len = snprintf(NULL, 0, "%s: %d %s: %d %s: %d\n", desc, val, desc2, val2, desc3, val3);
 	char *str = malloc(len + 2);
 	snprintf(str, len + 2, "%s: %d %s: %d %s: %d\n", desc, val, desc2, val2, desc3, val3);
@@ -69,7 +72,8 @@ void displayInts3(char* desc, int val, char* desc2, int val2, char* desc3, int v
 	free(str);
 }
 
-void displayInts4(char* desc, int val, char* desc2, int val2, char* desc3, int val3, char* desc4, int val4){
+void displayInts4(char* desc, int val, char* desc2, int val2, char* desc3, int val3, char* desc4, int val4)
+{
 	int len = snprintf(NULL, 0, "%s: %d %s: %d %s: %d %s: %d\n", desc, val, desc2, val2, desc3, val3, desc4, val4);
 	char *str = malloc(len + 2);
 	snprintf(str, len + 2, "%s: %d %s: %d %s: %d %s: %d\n", desc, val, desc2, val2, desc3, val3, desc4, val4);
@@ -77,7 +81,8 @@ void displayInts4(char* desc, int val, char* desc2, int val2, char* desc3, int v
 	free(str);
 }
 
-void displayFloats4(char* desc, float32_t val, char* desc2, float32_t val2, char* desc3, float32_t val3, char* desc4, float32_t val4){
+void displayFloats4(char* desc, float32_t val, char* desc2, float32_t val2, char* desc3, float32_t val3, char* desc4, float32_t val4)
+{
 	int len = snprintf(NULL, 0, "%s: %f %s: %f %s: %f %s: %f\n", desc, val, desc2, val2, desc3, val3, desc4, val4);
 	char *str = malloc(len + 2);
 	snprintf(str, len + 2, "%s: %f %s: %f %s: %f %s: %f\n", desc, val, desc2, val2, desc3, val3, desc4, val4);
@@ -85,7 +90,8 @@ void displayFloats4(char* desc, float32_t val, char* desc2, float32_t val2, char
 	free(str);
 }
 
-void dispImu(float32_t* gyr, float32_t* acc, float32_t timeDelt){
+void dispImu(float32_t* gyr, float32_t* acc, float32_t timeDelt)
+{
 	int len = snprintf(NULL, 0, "imu,%f,%f,%f,%f,%f,%f,%f\n", gyr[0], gyr[1], gyr[2], acc[0], acc[1], acc[2], timeDelt);
 	char *str = malloc(len + 2);
 	snprintf(str, len + 2, "imu,%f,%f,%f,%f,%f,%f,%f\n", gyr[0], gyr[1], gyr[2], acc[0], acc[1], acc[2], timeDelt);
@@ -93,7 +99,8 @@ void dispImu(float32_t* gyr, float32_t* acc, float32_t timeDelt){
 	free(str);
 }
 
-void dispEuler(float32_t* eul){
+void dispEuler(float32_t* eul)
+{
 	int len = snprintf(NULL, 0, "euler,%f,%f,%f\n", eul[0], eul[1], eul[2]);
 	char *str = malloc(len + 2);
 	snprintf(str, len + 2, "euler,%f,%f,%f\n", eul[0], eul[1], eul[2]);
@@ -101,7 +108,8 @@ void dispEuler(float32_t* eul){
 	free(str);
 }
 
-void dispEst(quaternion_t est){
+void dispEst(quaternion_t est)
+{
 	int len = snprintf(NULL, 0, "est,%f,%f,%f,%f\n", est.w, est.vec[0], est.vec[1], est.vec[2]);
 	char *str = malloc(len + 2);
 	snprintf(str, len + 2, "est,%f,%f,%f,%f\n", est.w, est.vec[0], est.vec[1], est.vec[2]);
@@ -109,7 +117,8 @@ void dispEst(quaternion_t est){
 	free(str);
 }
 
-void dispMatrixDebug(float32_t* mat){
+void dispMatrixDebug(float32_t* mat)
+{
 	int len = snprintf(NULL, 0, "mat,%f,%f,%f,%f,%f,%f,%f\n", mat[0], mat[1], mat[2], mat[3], mat[4], mat[5], mat[6]);
 	char *str = malloc(len + 2);
 	snprintf(str, len + 2, "mat,%f,%f,%f,%f,%f,%f,%f\n", mat[0], mat[1], mat[2], mat[3], mat[4], mat[5], mat[6]);

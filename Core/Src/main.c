@@ -17,7 +17,6 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-#include <control.h>
 #include "main.h"
 #include "dma.h"
 #include "spi.h"
@@ -27,17 +26,13 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "usbd_cdc_if.h"
-#include "string.h"
-#include "math.h"
 #include "imu.h"
 #include "expresslrs.h"
-#include "sx1280.h"
 #include "esc.h"
-#include "arm_math.h"
 #include "kalman.h"
 #include "button_handler.h"
 #include "com_debugging.h"
+#include "control.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -69,32 +64,25 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-uint8_t radioDmaBuffer[8] = {0x00};
+// pass through buffers for sending data between peripherals
+uint8_t radio_dma_buffer[8] = {0x00};
 
-uint16_t rcData[8] = {0,0,0,0,0,0,0,0};
-
-int countMicros = 0;
-int countMicroTemp = 0;
-int countMotor = 0;
+uint16_t rc_data[8] = {0,0,0,0,0,0,0,0};
 
 uint16_t mot_buf[4] = {0};
 
-uint32_t lastKalmanTick = 0;
+uint32_t last_kalman_tick = 0;
 
-int16_t motorCount = 0;
-int gyroCtr = 0;
-int kalmanCtr = 0;
-
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
 	if (htim == htim_esc_kalman) {
 		if(!motors_armed){
 			arm_ESC();
 		}else{
 			float32_t currTick = micros();
-			  float32_t deltTime = (float32_t)(getDeltaTime(currTick, lastKalmanTick)) * 0.000001;
-			  lastKalmanTick = currTick;
+			  float32_t deltTime = (float32_t)(getDeltaTime(currTick, last_kalman_tick)) * 0.000001;
+			  last_kalman_tick = currTick;
 			  updateKalman(gyro, accel, deltTime);
-			  kalmanCtr++;
 			  controlsOuterUpdate(estimate, accel);
 		}
 	  }else if(htim == htim_elrs){
@@ -103,18 +91,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 		  clockPhaseUpdate(0);
 		  doFhssIrq();
 	  }else if(htim == htim_control_loop){
-		  motorCount++;
 		  if(bmi270_ready && kalman_initialized && !isDisconnected()){
 			  // fast loop, gets inputs and does rate control
 			  //TODO: inputs do not have to be here
-			  expressLrsSetRcDataFromPayload(rcData);
-			  controlsInnerLoop(rcData, mot_buf, gyro, accel, estimate);
+			  expressLrsSetRcDataFromPayload(rc_data);
+			  controlsInnerLoop(rc_data, mot_buf, gyro, accel, estimate);
 			  set_esc_outputs(mot_buf);
 		  }
 	  }else if(htim == htim_imu){
 		  if(bmi270_ready && kalman_initialized){
 			  readIMUData();
-			  gyroCtr++;
 		  }
 	  }else if(htim == htim_debug_loop){
 		  if(bmi270_ready && kalman_initialized){
@@ -132,8 +118,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
    if (GPIO_Pin == GPIO_PIN_13) {
 	  // process radio packet on interrupt
 	  setLastPacketTime(micros());
-	  sx1280_read_interrupt(radioDmaBuffer);
-	  processRFPacket((uint8_t *)radioDmaBuffer, micros());
+	  sx1280_read_interrupt(radio_dma_buffer);
+	  processRFPacket((uint8_t *)radio_dma_buffer, micros());
   } else if(GPIO_Pin == GPIO_PIN_2){
 	  // add erase flash sector functionality on multiple presses as well as clearing bind mode
 	  char* data4 = "BUTTON PRESS\n";
@@ -195,8 +181,8 @@ int main(void)
   IMUInit();
   controlsInit();
   quaternion_t initEst = {1.0, {0.0, 0.0, 0.0}};
-  lastKalmanTick = micros();
-  initKalman(initEst, 0.0, 0.004 , 0.000005, 0.005, 0.0, 0.01);
+  last_kalman_tick = micros();
+  initKalman(initEst, ESTIMATE_COV, GYRO_COV, GYRO_BIAS_COV, ACCEL_PROC_COV, ACCEL_BIAS_COV, ACCEL_OBS_COV);
 
   // start the microsecond clock
   CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
@@ -261,11 +247,13 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-uint32_t micros(){
+uint32_t micros()
+{
 	return (DWT->CYCCNT/48);
 }
 
-uint32_t getDeltaTime(uint32_t greater, uint32_t lesser){
+uint32_t getDeltaTime(uint32_t greater, uint32_t lesser)
+{
 	if(greater < lesser){
 		greater += (0xFFFFFFFF/48);
 	}

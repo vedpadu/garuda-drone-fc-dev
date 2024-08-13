@@ -37,7 +37,8 @@ uint8_t freq_count = 80;
 	{3, 50, LORA_BW_800, LORA_SF_8, LORA_CR_LI_4_8, 20000, 2, 12} // bind mode rate index
 };
 
-void initExpressLRS(){
+void initExpressLRS()
+{
 	HAL_TIM_Base_Start_IT(htim_elrs);
 
 	initFlashMemoryConfig(2);
@@ -62,7 +63,8 @@ void initExpressLRS(){
 }
 
 // deals with frequency hopping and LORA params
-void refreshExpressLRS(uint8_t newIndex){
+void refreshExpressLRS(uint8_t newIndex)
+{
 	fhssGenSequence(UID);
 	receiver.nonce_RX = 0;
 	receiver.connected = ELRS_DISCONNECTED;
@@ -81,7 +83,8 @@ void refreshExpressLRS(uint8_t newIndex){
 
 // run on sequence a little before when we think a packet should arrive,
 // so that we can change the frequency to ensure that we get all packets
-void clockPhaseUpdate(uint32_t timeMicros){
+void clockPhaseUpdate(uint32_t timeMicros)
+{
 	if(!isDisconnected()){
 		phase_locker.raw_phase_diff = getDeltaTime(phase_locker.last_clock_time_micros, phase_locker.last_packet_time_micros);
 		if(phase_locker.raw_phase_diff > DC_TIMEOUT_MICROS){
@@ -121,7 +124,8 @@ void clockPhaseUpdate(uint32_t timeMicros){
 }
 
 // run when a packet is actually received
-void processRFPacket(uint8_t* packet, uint32_t timeMicros){
+void processRFPacket(uint8_t* packet, uint32_t timeMicros)
+{
 	elrsOtaPacket_t * const ota_pkt_ptr = (elrsOtaPacket_t * const) packet;
 	switch(ota_pkt_ptr->type) {
 	    case ELRS_SYNC_PACKET:
@@ -146,7 +150,8 @@ void processRFPacket(uint8_t* packet, uint32_t timeMicros){
 	}
 }
 
-void processBindPacket(uint8_t* packet){
+void processBindPacket(uint8_t* packet)
+{
 	UID[2] = packet[0];
 	UID[3] = packet[1];
 	UID[4] = packet[2];
@@ -158,7 +163,8 @@ void processBindPacket(uint8_t* packet){
 	refreshExpressLRS(receiver.rate_index);
 }
 
-uint8_t processSyncPacket(elrsOtaPacket_t * const otaPktPtr, uint32_t timeMicros){
+uint8_t processSyncPacket(elrsOtaPacket_t * const otaPktPtr, uint32_t timeMicros)
+{
 	// Verify the first two of three bytes of the binding ID, which should always match
 	if (otaPktPtr->sync.UID3 != UID[3] || otaPktPtr->sync.UID4 != UID[4]) {
 		return 0;
@@ -195,7 +201,8 @@ uint8_t processSyncPacket(elrsOtaPacket_t * const otaPktPtr, uint32_t timeMicros
 	return 1;
 }
 
-void tentativeConnection(uint32_t timeMicros){
+void tentativeConnection(uint32_t timeMicros)
+{
 	receiver.connected = ELRS_TENTATIVE;
 
 	phase_locker.last_clock_time_micros = timeMicros;
@@ -203,7 +210,8 @@ void tentativeConnection(uint32_t timeMicros){
 	phase_locker.raw_phase_diff = 0;
 }
 
-void disconnect(uint32_t timeMicros){
+void disconnect(uint32_t timeMicros)
+{
 	receiver.connected = ELRS_DISCONNECTED;
 	phase_locker.last_clock_time_micros = timeMicros;
 	phase_locker.last_packet_time_micros = timeMicros; // reset so we don't have crazy long differences
@@ -216,12 +224,14 @@ void disconnect(uint32_t timeMicros){
 	sx1280_write_RF_frequency(receiver.current_freq);
 }
 
-void writeCurrentConfigsToFlash(){
+void writeCurrentConfigsToFlash()
+{
 	uint8_t buf[8] = {UID[0], UID[1], UID[2], UID[3], UID[4], UID[5], receiver.rate_index, receiver.switch_mode};
 	writeNewConfig(buf);
 }
 
-void changeRateIndex(uint8_t newIndex, uint32_t freq, uint8_t uid5){
+void changeRateIndex(uint8_t newIndex, uint32_t freq, uint8_t uid5)
+{
 	receiver.rate_index = newIndex;
 	elrsModSettings_t newSettings = air_rate_config[receiver.rate_index];
 	receiver.mod_params = newSettings;
@@ -235,7 +245,8 @@ void expressLrsSetRcDataFromPayload(uint16_t *rcData)
 	unpackChannelDataHybridWide(rcData, ota_pkt_ptr);
 }
 
-void setBindingMode(){
+void setBindingMode()
+{
 	if(!receiver.in_binding_mode){
 		receiver.in_binding_mode = 1;
 		memcpy(UID, binding_UID, 6);
@@ -244,32 +255,38 @@ void setBindingMode(){
 	}
 }
 
-void exitBindMode(){
+void exitBindMode()
+{
 	receiver.in_binding_mode = 0;
 	receiver.rate_index = 1;
 	refreshExpressLRS(receiver.rate_index);
 }
 
-uint8_t isDisconnected(){
+uint8_t isDisconnected()
+{
 	if(receiver.connected == ELRS_DISCONNECTED){
 		return 1;
 	}
 	return 0;
 }
 
-uint8_t isBindingMode(){
+uint8_t isBindingMode()
+{
 	return receiver.in_binding_mode;
 }
 
-void setPrescaleForRateIndex(uint8_t index){
+void setPrescaleForRateIndex(uint8_t index)
+{
 	__HAL_TIM_SET_AUTORELOAD(htim_elrs, air_rate_config[index].interval - 1);
 }
 
-void setLastClockTime(uint32_t timeMicros){
+void setLastClockTime(uint32_t timeMicros)
+{
 	phase_locker.last_clock_time_micros = timeMicros;
 }
 
-void setLastPacketTime(uint32_t timeMicros){
+void setLastPacketTime(uint32_t timeMicros)
+{
 	phase_locker.last_packet_time_micros = timeMicros;
 }
 
@@ -325,7 +342,8 @@ void fhssGenSequence(const uint8_t inputUID[])
     }
 }
 
-uint8_t doFhssIrq(){
+uint8_t doFhssIrq()
+{
 	receiver.nonce_RX += 1;
 	uint8_t mod_result_FHSS = (receiver.nonce_RX) % receiver.mod_params.fhss_hop_interval;
 

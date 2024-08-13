@@ -8,6 +8,9 @@
 extern float gyro[3];
 extern float accel[3];
 
+#define GYRO_RANGE_DPS 2000.0
+#define ACCEL_G_RANGE 2.0
+
 void IMUInit();
 void readIMUData();
 

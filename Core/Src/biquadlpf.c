@@ -8,7 +8,8 @@
 
 #include "biquadlpf.h"
 
-void biquadLPFInit(BiquadLPF* filter, float cutoffFreq, float sampleFreq){
+void biquadLPFInit(BiquadLPF* filter, float cutoffFreq, float sampleFreq)
+{
 	// initialize variables
 	float32_t empty[3] = {0};
 	assignVector(filter->x_n1, empty);
@@ -38,7 +39,8 @@ void biquadLPFInit(BiquadLPF* filter, float cutoffFreq, float sampleFreq){
 	filter->a2 /= a0;
 }
 
-void biquadLPFApply(BiquadLPF* filter, float32_t x_n[3], float32_t y_n[3]){
+void biquadLPFApply(BiquadLPF* filter, float32_t x_n[3], float32_t y_n[3])
+{
 	y_n[0] = filter->b0 * x_n[0] + filter->b1 * filter->x_n1[0] + filter->b2 * filter->x_n2[0] - filter->a1 * filter->y_n1[0] - filter->a2 * filter->y_n2[0];
 	y_n[1] = filter->b0 * x_n[1] + filter->b1 * filter->x_n1[1] + filter->b2 * filter->x_n2[1] - filter->a1 * filter->y_n1[1] - filter->a2 * filter->y_n2[1];
 	y_n[2] = filter->b0 * x_n[2] + filter->b1 * filter->x_n1[2] + filter->b2 * filter->x_n2[2] - filter->a1 * filter->y_n1[2] - filter->a2 * filter->y_n2[2];
@@ -50,7 +52,8 @@ void biquadLPFApply(BiquadLPF* filter, float32_t x_n[3], float32_t y_n[3]){
 }
 
 // TODO: put in util
-void assignVector(float32_t* out, float32_t* in){
+void assignVector(float32_t* out, float32_t* in)
+{
 	out[0] = in[0];
 	out[1] = in[1];
 	out[2] = in[2];
