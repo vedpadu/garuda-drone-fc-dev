@@ -12,7 +12,11 @@
 #include "expresslrs.h"
 #include "flash_memory_handler.h"
 
-#define DOUBLE_CLICK_MILLIS 750
+#define MULTI_CLICK_THRESHOLD_MILLIS 750
+
+#define START_BIND_BUTTON_PRESS_COUNT 1
+#define EXIT_BIND_BUTTON_PRESS_COUNT 2
+#define ERASE_FLASH_MEMORY_BUTTON_PRESS_COUNT 4
 
 void processButtonPress(uint32_t timeMicros);
 

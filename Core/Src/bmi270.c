@@ -9,8 +9,8 @@ uint8_t bmi270_ready = 0;
 // buffer to use for internal read spi calls. save memory
 uint8_t bmi270_init_spi_buf[2] = { 0x00, 0x00 };
 
-uint8_t bmi270_data_read_buf[14] = { 0x00 };
-uint8_t bmi270_data_transmit_buf[14] = { BMI270_REG_ACC_DATA_X_LSB | 0x80, 0x00 };
+uint8_t bmi270_data_read_buf[BMI_DATA_BUF_SIZE] = { 0x00 };
+uint8_t bmi270_data_transmit_buf[BMI_DATA_BUF_SIZE] = { BMI270_REG_ACC_DATA_X_LSB | 0x80, 0x00 };
 
 void bmi270_cs_low() {
 	HAL_GPIO_WritePin(CS_GPIO_Port_BMI270, CS_Pin_BMI270, GPIO_PIN_RESET);
@@ -23,7 +23,7 @@ void bmi270_read_data() // This is answered in an interrupt callback in imu.c (H
 {
 	bmi270_cs_low();
 	HAL_SPI_TransmitReceive_DMA(hspi_imu, bmi270_data_transmit_buf, bmi270_data_read_buf,
-			14);
+			BMI_DATA_BUF_SIZE);
 }
 
 int16_t bmi270_get_CAS() {

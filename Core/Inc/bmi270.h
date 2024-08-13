@@ -11,11 +11,14 @@
 #define CS_Pin_BMI270 SPI1_CS_Pin
 #define CS_GPIO_Port_BMI270 GPIOA
 
+// 12 bytes for all the accel and gyro data and 2 bytes for first two dummy bytes
+#define BMI_DATA_BUF_SIZE 14
+
 extern uint8_t bmi270_spi_working;
 extern uint8_t bmi270_init_working;
 extern uint8_t bmi270_ready;
 extern int countGyros;
-extern uint8_t bmi270_data_read_buf[14];
+extern uint8_t bmi270_data_read_buf[BMI_DATA_BUF_SIZE];
 
 // not a complete list
 typedef enum {
