@@ -4,7 +4,7 @@
  *  Created on: Aug 1, 2024
  *      Author: vedpa
  */
-#include <motor_mixer.h>
+#include <control.h>
 #include <output_handler.h>
 
 rateSetpoint_t desired_rate = {0.0, 0.0, 0.0}; // roll, pitch, yaw
@@ -63,7 +63,9 @@ PIDController throttle_PID = {PID_THROTTLE_KP, PID_THROTTLE_KI, PID_THROTTLE_KD,
 						SAMPLE_TIME_INNER };
 
 
-void motorMixerInit(){
+void controlsInit(){
+	HAL_TIM_Base_Start_IT(htim_control_loop);
+
 	PIDController_Init(&roll_motor_PID);
 	PIDController_Init(&pitch_motor_PID);
 	PIDController_Init(&yaw_motor_PID);
@@ -76,7 +78,7 @@ void motorMixerInit(){
 	initOutputHandler(0.05, 0.15);
 }
 
-void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRate, float32_t* currentAccel, quaternion_t attitude){
+void controlsInnerLoop(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRate, float32_t* currentAccel, quaternion_t attitude){
 	handleRCInputs(rcData);
 	drone_armed = rc_inputs[4];
 	if(!drone_armed){
@@ -142,7 +144,7 @@ void findHoverThrottle(quaternion_t attitude, float32_t* currentAccel){
 	}
 }
 
-void motorMixerOuterUpdate(quaternion_t attitude, float32_t* accel){
+void controlsOuterUpdate(quaternion_t attitude, float32_t* accel){
 	float32_t pitchRate = -(float32_t)rc_inputs[1]/500.0;
 	float32_t rollRate = (float32_t)rc_inputs[0]/500.0;
 	float32_t yawRate = (float32_t)rc_inputs[3]/200.0;

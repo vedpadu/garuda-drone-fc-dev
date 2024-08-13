@@ -11,6 +11,7 @@
 #include <flash_memory_handler.h>
 #include <stdint.h>
 #include <math.h>
+#include "main.h"
 #include "sx1280.h"
 #include "tim.h"
 #include "com_debugging.h"

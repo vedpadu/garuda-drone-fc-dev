@@ -31,19 +31,19 @@ void sx1280_set_RF_rate(uint8_t sF, uint8_t bW, uint8_t cR, uint8_t preambleLen,
 void sx1280_read_interrupt(uint8_t* out){
 	uint8_t clear_irq[3] = {SX1280_CLEAR_INTERRUPTS, 0xFF, 0xFF};
 	HAL_GPIO_WritePin(CS_GPIO_Port_SX1280, CS_Pin_SX1280, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(hspi_sx1280, clear_irq, 3, 10);
+	HAL_SPI_Transmit(hspi_receiver, clear_irq, 3, 10);
 	HAL_GPIO_WritePin(CS_GPIO_Port_SX1280, CS_Pin_SX1280, GPIO_PIN_SET);
 
 	HAL_GPIO_WritePin(CS_GPIO_Port_SX1280, CS_Pin_SX1280, GPIO_PIN_RESET); // get pointer
 	uint8_t transmit_buf[4] = {SX1280_GET_PACKET_POINTER, 0x00, 0x00, 0x00};
-	HAL_SPI_Transmit(hspi_sx1280, transmit_buf, 4, 10);
-	HAL_SPI_Receive(hspi_sx1280, packet_pointer_buf, 4, 10);
+	HAL_SPI_Transmit(hspi_receiver, transmit_buf, 4, 10);
+	HAL_SPI_Receive(hspi_receiver, packet_pointer_buf, 4, 10);
 	HAL_GPIO_WritePin(CS_GPIO_Port_SX1280, CS_Pin_SX1280, GPIO_PIN_SET);
 
 	HAL_GPIO_WritePin(CS_GPIO_Port_SX1280, CS_Pin_SX1280, GPIO_PIN_RESET); // read buffer data
 	uint8_t transmit_buf_2[11] = {SX1280_GET_RX_DATA, packet_pointer_buf[0] - 16, 0x00}; // - 16 is kind of a magic number, it worked from my testing
-	HAL_SPI_Transmit(hspi_sx1280, transmit_buf_2, 11, 1);
-	HAL_SPI_Receive(hspi_sx1280, transmit_buf_2, 11, 10);
+	HAL_SPI_Transmit(hspi_receiver, transmit_buf_2, 11, 1);
+	HAL_SPI_Receive(hspi_receiver, transmit_buf_2, 11, 10);
 	HAL_GPIO_WritePin(CS_GPIO_Port_SX1280, CS_Pin_SX1280, GPIO_PIN_SET);
 	memcpy((uint8_t *) out, (uint8_t *) transmit_buf_2, 8);
 }
@@ -52,8 +52,8 @@ uint8_t sx1280_get_status(){
 	uint8_t getStatus = SX1280_GET_STATUS;
 	uint8_t status_buf[1] = {0x00};
 	HAL_GPIO_WritePin(CS_GPIO_Port_SX1280, CS_Pin_SX1280, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(hspi_sx1280, &getStatus, 1, 10);
-	HAL_SPI_Receive(hspi_sx1280, status_buf, 1, 10);
+	HAL_SPI_Transmit(hspi_receiver, &getStatus, 1, 10);
+	HAL_SPI_Receive(hspi_receiver, status_buf, 1, 10);
 	HAL_GPIO_WritePin(CS_GPIO_Port_SX1280, CS_Pin_SX1280, GPIO_PIN_SET);
 	return status_buf[0];
 }
@@ -150,8 +150,8 @@ uint8_t sx1280_read_register(uint16_t reg){
 	buf[2] = (uint8_t)((reg) & 0xFF);
 
 	HAL_GPIO_WritePin(CS_GPIO_Port_SX1280, CS_Pin_SX1280, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(hspi_sx1280, buf, 5, 10);
-	HAL_SPI_Receive(hspi_sx1280, read_buf, 5, 10);
+	HAL_SPI_Transmit(hspi_receiver, buf, 5, 10);
+	HAL_SPI_Receive(hspi_receiver, read_buf, 5, 10);
 	HAL_GPIO_WritePin(CS_GPIO_Port_SX1280, CS_Pin_SX1280, GPIO_PIN_SET);
 
 	return read_buf[4];
@@ -164,7 +164,7 @@ void sx1280_set_high_power(){
 //TODO: better delays
 void sx1280_send_SPI_buffer(uint8_t* buf, uint8_t size){
 	HAL_GPIO_WritePin(CS_GPIO_Port_SX1280, CS_Pin_SX1280, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(hspi_sx1280, buf, size, 10);
+	HAL_SPI_Transmit(hspi_receiver, buf, size, 10);
 	HAL_GPIO_WritePin(CS_GPIO_Port_SX1280, CS_Pin_SX1280, GPIO_PIN_SET);
 }
 

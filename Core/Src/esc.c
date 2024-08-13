@@ -20,6 +20,11 @@ motorPWMTim_t motor_PWM_tims[4] = {
 		{ 3, &htim2, TIM_CHANNEL_1, &hdma_tim2_ch1 }, // red black // + pitch - roll
 		};
 
+
+void init_ESC(){
+	HAL_TIM_Base_Start_IT(htim_esc_kalman);
+}
+
 // deals with the initialization of the ESC
 // this runs 4 times per millisecond, such that each motor will be updated each millisecond.
 // this is done so that the DMA streams do not block each other and screw up the motor initialization ( more of a precaution than a necessity)
@@ -48,7 +53,7 @@ void arm_ESC() {
 	if (!motors_armed && initialization_time > ESC_POWER_UP_TIME + INIT_THROTTLE_MAX * 6 && arming_ctr % MOTOR_COUNT == MOTOR_COUNT - 1) {
 		motors_armed = 1;
 		// changes priority and prescaler to run kalman filter on the same timer
-		HAL_NVIC_SetPriority(TIM5_IRQn, KALMAN_FILTER_NVIC_PRIO, 0);
+		HAL_NVIC_SetPriority(htim_esc_kalman_irqn, KALMAN_FILTER_NVIC_PRIO, 0);
 		htim5.Instance->PSC = (CLOCK_FRQ/KALMAN_FILTER_SAMPLE_RATE/100) - 1;
 		htim5.Instance->ARR = 99;
 	}

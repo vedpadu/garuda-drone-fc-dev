@@ -37,9 +37,6 @@ extern SPI_HandleTypeDef hspi3;
 extern uint8_t doBlink;
 extern int countMicroTemp;
 
-#include "arm_math.h"
-#include "kalman.h"
-
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -68,10 +65,10 @@ void Error_Handler(void);
 #define RADIO_EXTI_Pin GPIO_PIN_13
 #define RADIO_EXTI_GPIO_Port GPIOC
 #define RADIO_EXTI_EXTI_IRQn EXTI15_10_IRQn
-#define LED_0_Pin GPIO_PIN_14
-#define LED_0_GPIO_Port GPIOC
-#define LED_0_PLEASE_Pin GPIO_PIN_15
-#define LED_0_PLEASE_GPIO_Port GPIOC
+#define RED_LED_Pin GPIO_PIN_14
+#define RED_LED_GPIO_Port GPIOC
+#define GREEN_LED_Pin GPIO_PIN_15
+#define GREEN_LED_GPIO_Port GPIOC
 #define SPI1_CS_Pin GPIO_PIN_4
 #define SPI1_CS_GPIO_Port GPIOA
 #define BIND_Pin GPIO_PIN_2
@@ -89,6 +86,16 @@ void Error_Handler(void);
 #define RADIO_RST_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
+#define htim_debug_loop &htim3
+#define htim_elrs &htim9
+#define htim_esc_kalman &htim5
+#define htim_esc_kalman_irqn TIM5_IRQn
+#define htim_control_loop &htim11
+#define htim_imu &htim10
+
+#define hspi_imu &hspi1
+#define hspi_receiver &hspi3
+
 #define CLOCK_FRQ 48000000
 #define KALMAN_FILTER_NVIC_PRIO 5
 #define KALMAN_FILTER_SAMPLE_RATE 100

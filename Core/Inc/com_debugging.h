@@ -10,6 +10,8 @@
 
 #include "usbd_cdc_if.h"
 #include "stdlib.h"
+#include "arm_math.h"
+#include "math_util.h"
 
 char *convertUint8(uint8_t *a);
 char *convertUint16(uint16_t *a);

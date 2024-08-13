@@ -15,8 +15,6 @@
 #define CS_Pin_SX1280 SPI3_CS_Pin
 #define CS_GPIO_Port_SX1280 SPI3_CS_GPIO_Port
 
-#define hspi_sx1280 (&hspi3)
-
 #define CLOCK_FREQ 52000000
 #define SX1280_PLL_STEP (CLOCK_FREQ / (262144.0))
 

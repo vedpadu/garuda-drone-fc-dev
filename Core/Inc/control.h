@@ -7,8 +7,8 @@
  *      Author: vedpadu
  */
 
-#ifndef INC_MOTOR_MIXER_H_
-#define INC_MOTOR_MIXER_H_
+#ifndef INC_CONTROL_H_
+#define INC_CONTROL_H_
 
 #include "pid.h"
 #include "math_util.h"
@@ -90,15 +90,15 @@ typedef struct angleSetpoint_s {
 }angleSetpoint_t;
 
 
-void motorMixerInit();
-void motorMixerUpdate(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRate, float32_t* currentAccel, quaternion_t attitude);
+void controlsInit();
+void controlsInnerLoop(uint16_t* rcData, uint16_t* motorOut, float32_t* currentRate, float32_t* currentAccel, quaternion_t attitude);
 void handleRCInputs(uint16_t* rcData);
 void getMotorOutputs(outRates_t set, uint16_t* motorOut);
 void findHoverThrottle(quaternion_t attitude, float32_t* currentAccel);
 
 void achieveDesiredRates(float32_t* currentRate);
 void getDesiredRates(float32_t* eulerAtt);
-void motorMixerOuterUpdate(quaternion_t attitude, float32_t* accel);
+void controlsOuterUpdate(quaternion_t attitude, float32_t* accel);
 void getDesiredThrottle(float32_t dotTarget, quaternion_t attitude, float32_t* accel);
 
-#endif /* INC_MOTOR_MIXER_H_ */
+#endif /* INC_CONTROL_H_ */

@@ -12,7 +12,7 @@ float32_t gyro_biases[3] = {(float32_t)-0.0013, (float32_t)-0.0035, (float32_t)-
 float32_t accel_biases[3] = {(float32_t)0.295/9.8, (float32_t)-0.032/9.8, (float32_t)0.013/9.8};
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi){
-	if(hspi == hspi_bmi270){
+	if(hspi == hspi_imu){
 		bmi270_cs_high();
 		uint16_t accelXBin = ((uint16_t)bmi270_data_read_buf[3]) << 8 | bmi270_data_read_buf[2];
 		uint16_t accelYBin = ((uint16_t)bmi270_data_read_buf[5]) << 8 | bmi270_data_read_buf[4];

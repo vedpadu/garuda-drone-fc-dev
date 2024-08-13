@@ -22,7 +22,7 @@ void bmi270_cs_high() {
 void bmi270_read_data() // This is answered in an interrupt callback in imu.c (HAL_SPI_TxRxCpltCallback)
 {
 	bmi270_cs_low();
-	HAL_SPI_TransmitReceive_DMA(hspi_bmi270, bmi270_data_transmit_buf, bmi270_data_read_buf,
+	HAL_SPI_TransmitReceive_DMA(hspi_imu, bmi270_data_transmit_buf, bmi270_data_read_buf,
 			14);
 }
 
@@ -43,7 +43,7 @@ int16_t bmi270_get_CAS() {
 // Details for this init sequence are described in the BMI270 datasheet.
 void bmi270_init() {
 	bmi270_enable_SPI();
-	HAL_TIM_Base_Start_IT(exti_tim);
+	HAL_TIM_Base_Start_IT(htim_imu);
 	bmi270_spi_working = bmi270_read_register(BMI270_REG_CHIP_ID, bmi270_init_spi_buf) == 0x24;
 
 	if (bmi270_spi_working) {
@@ -105,8 +105,8 @@ uint8_t bmi270_read_register(uint8_t rgstr, uint8_t *out_buf) {
 	rgstr = rgstr | 0x80;
 	bmi270_cs_low();
 	//TODO: remove dummy delay values
-	HAL_SPI_Transmit(hspi_bmi270, &rgstr, 1, 10);
-	HAL_SPI_Receive(hspi_bmi270, out_buf, 2, 10);
+	HAL_SPI_Transmit(hspi_imu, &rgstr, 1, 10);
+	HAL_SPI_Receive(hspi_imu, out_buf, 2, 10);
 	bmi270_cs_high();
 	return out_buf[1];
 }
@@ -114,7 +114,7 @@ uint8_t bmi270_read_register(uint8_t rgstr, uint8_t *out_buf) {
 void bmi270_write_register(uint8_t rgstr, uint8_t data) {
 	bmi270_cs_low();
 	uint8_t buf[2] = { rgstr, data };
-	HAL_SPI_Transmit(hspi_bmi270, buf, 2, 10);
+	HAL_SPI_Transmit(hspi_imu, buf, 2, 10);
 	bmi270_cs_high();
 }
 
@@ -123,15 +123,15 @@ uint8_t* bmi270_burst_read(uint8_t rgstr, uint8_t *out_buf, uint16_t size,
 	rgstr = rgstr | 0x80;
 	bmi270_cs_low();
 	//TODO: remove dummy delay values
-	HAL_SPI_Transmit(hspi_bmi270, &rgstr, 1, 10);
-	HAL_SPI_Receive(hspi_bmi270, out_buf, size + 1, timeout);
+	HAL_SPI_Transmit(hspi_imu, &rgstr, 1, 10);
+	HAL_SPI_Receive(hspi_imu, out_buf, size + 1, timeout);
 	bmi270_cs_high();
 	return out_buf;
 }
 
 void bmi270_burst_transmit(uint8_t *transmit_buf, uint32_t timeout, uint16_t size) {
 	bmi270_cs_low();
-	HAL_SPI_Transmit(hspi_bmi270, transmit_buf, size, timeout);
+	HAL_SPI_Transmit(hspi_imu, transmit_buf, size, timeout);
 	bmi270_cs_high();
 }
 

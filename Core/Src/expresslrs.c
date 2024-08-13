@@ -143,12 +143,9 @@ void processRFPacket(uint8_t* packet, uint32_t timeMicros){
 	lastPacketMicros = timeMicros;
 	switch(otaPktPtr->type) {
 	    case ELRS_SYNC_PACKET:
-	    	uint8_t syncVal = processSyncPacket(otaPktPtr, timeMicros);
-	    	if(syncVal == 1){
+	    	uint8_t sync_success = processSyncPacket(otaPktPtr, timeMicros);
+	    	if(sync_success){
 	    		lastSync = timeMicros;
-	    	}else if(syncVal == 0){
-	    		char* test3 = "SYNC FAIL\n";
-	    		//CDC_Transmit_FS((uint8_t *)test3, strlen(test3));
 	    	}
 		    break;
 	    case ELRS_RC_DATA_PACKET:
@@ -260,6 +257,8 @@ void writeCurrentConfigsToFlash(){
 }
 
 void initExpressLRS(){
+	HAL_TIM_Base_Start_IT(htim_elrs);
+
 	initFlashMemoryConfig(2);
 	uint8_t initConfigs[8] = {0x00};
 	readCurrentConfig(initConfigs);

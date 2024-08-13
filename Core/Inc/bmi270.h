@@ -16,8 +16,6 @@ extern uint8_t bmi270_init_working;
 extern uint8_t bmi270_ready;
 extern int countGyros;
 extern uint8_t bmi270_data_read_buf[14];
-#define hspi_bmi270 (&hspi1)
-#define exti_tim (&htim5)
 
 // not a complete list
 typedef enum {

@@ -11,6 +11,8 @@
 #include "stm32f4xx_hal.h"
 #include "tim.h"
 #include "stdint.h"
+#include "main.h"
+#include "string.h"
 
 extern uint8_t motors_armed;
 
@@ -34,6 +36,7 @@ typedef struct motorPWMTim_s {
 	DMA_HandleTypeDef* dma;
 } motorPWMTim_t;
 
+void init_ESC();
 void arm_ESC();
 void dshot600(uint32_t *motor, uint16_t value);
 void set_esc_outputs(uint16_t* desiredOut);

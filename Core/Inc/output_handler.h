@@ -8,7 +8,7 @@
 #ifndef INC_OUTPUT_HANDLER_H_
 #define INC_OUTPUT_HANDLER_H_
 
-#include <motor_mixer.h>
+#include <control.h>
 #include "math_util.h"
 
 void initOutputHandler(float32_t maxVel, float32_t maxAccel);

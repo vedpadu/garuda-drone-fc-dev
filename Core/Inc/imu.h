@@ -3,6 +3,7 @@
 
 #include "bmi270.h"
 #include "biquadlpf.h"
+#include "main.h"
 
 extern float gyro[3];
 extern float accel[3];

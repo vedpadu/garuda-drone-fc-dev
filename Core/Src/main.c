@@ -17,6 +17,7 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+#include <control.h>
 #include "main.h"
 #include "dma.h"
 #include "spi.h"
@@ -36,7 +37,6 @@
 #include "arm_math.h"
 #include "kalman.h"
 #include "button_handler.h"
-#include "motor_mixer.h"
 #include "com_debugging.h"
 /* USER CODE END Includes */
 
@@ -96,7 +96,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 			  lastKalmanTick = currTick;
 			  updateKalman(gyro, accel, deltTime);
 			  kalmanCtr++;
-			  motorMixerOuterUpdate(estimate, accel);
+			  controlsOuterUpdate(estimate, accel);
 //			  float32_t vec[3] = {0.0, 0.0, -1.0};
 //			  quaternion_t inverseEst = quatInverse(estimate);
 //				rotateVector3ByQuaternion(vec, inverseEst); // verify this is working
@@ -118,7 +118,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 			  // fast loop, gets inputs and does rate control
 			  //TODO: inputs do not have to be here
 			  expressLrsSetRcDataFromPayload(rcData);
-			  motorMixerUpdate(rcData, mot_buf, gyro, accel, estimate);
+			  controlsInnerLoop(rcData, mot_buf, gyro, accel, estimate);
 			  set_esc_outputs(mot_buf);
 		  }
 	  }else if(htim == &htim11){
@@ -212,18 +212,19 @@ int main(void)
   MX_TIM10_Init();
   MX_TIM11_Init();
   /* USER CODE BEGIN 2 */
-  HAL_TIM_Base_Start_IT(&htim3); // debug loop and LEDs
-  HAL_TIM_Base_Start_IT(&htim9); // clock express lrs phase // 250 hz atm
-  HAL_TIM_Base_Start_IT(&htim5); // esc // 4000 hz
+  HAL_TIM_Base_Start_IT(htim_debug_loop); // debug loop and LEDs
+  //HAL_TIM_Base_Start_IT(&htim9); // clock express lrs phase // 250 hz atm
+  //HAL_TIM_Base_Start_IT(&htim5); // esc // 4000 hz
   HAL_Delay(1); // Delays are to make sure the timers are not in phase.
-  HAL_TIM_Base_Start_IT(&htim11); // motor // trying to get 1000 hz // this clock only psc work?
+  //HAL_TIM_Base_Start_IT(&htim11); // motor // trying to get 1000 hz // this clock only psc work?
   HAL_Delay(1);
-  HAL_TIM_Base_Start_IT(&htim10); // imu 100 hz
+  //HAL_TIM_Base_Start_IT(&htim10); // imu 100 hz
 
   // initialize peripherals
+  init_ESC();
   initExpressLRS();
   IMUInit();
-  motorMixerInit();
+  controlsInit();
   quaternion_t initEst = {1.0, {0.0, 0.0, 0.0}};
   lastKalmanTick = micros();
   initKalman(initEst, 0.0, 0.004 , 0.000005, 0.005, 0.0, 0.01);
@@ -290,8 +291,7 @@ void SystemClock_Config(void)
   }
 }
 
-
-
+/* USER CODE BEGIN 4 */
 uint32_t micros(){
 	return (DWT->CYCCNT/48);
 }
